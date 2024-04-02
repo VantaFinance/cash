@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name=”robots” content=”none”/>
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
+    <title>Loan Cash Bank Api</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+
+
+<div id="redoc"></div>
+
+<script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+<script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true, theme: 'forest', fontSize: '13px' , sequence: {}});
+
+    Redoc.init("./openapi.json", {}, document.getElementById("redoc"), async () => {
+        let id = 0;
+        const mermaidNodes = document.getElementById("redoc").querySelectorAll("pre > code.language-mermaid");
+        for (const mermaidNode of mermaidNodes) {
+            const { svg } = await mermaid.render(`mermaid-${id++}`, mermaidNode.textContent);
+            mermaidNode.parentNode.outerHTML = svg;
+        }
+    });
+</script>
+
+</body>
+</html>

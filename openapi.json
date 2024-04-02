@@ -1,0 +1,2917 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Loan Cash Api",
+    "description": {
+      "$ref": "./workflow.md"
+    },
+    "version": "0.0.1"
+  },
+  "webhooks": {
+    "onUpdatedScoring": {
+      "post": {
+        "summary": "Нотификация изменения состояния скоринга",
+        "description": "Данная нотификация срабатывает при изменения состояния скоринга",
+        "requestBody": {
+          "required": true,
+          "description": "Body request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "externalApplicationId"
+                ],
+                "properties": {
+                  "externalApplicationId": {
+                    "description": "Идентификатор заявки внешней системы",
+                    "$ref": "#/components/schemas/Uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Запрос принят"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/application": {
+      "post": {
+        "tags": [
+          "Операции над заявкой"
+        ],
+        "description": "Создать заявку на займ",
+        "summary": "Создать заявку на займ",
+        "requestBody": {
+          "description": "Body request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "externalApplicationId",
+                  "amount",
+                  "currency",
+                  "term",
+                  "client"
+                ],
+                "properties": {
+                  "externalApplicationId": {
+                    "description": "Идентификатор заявки внешней системы",
+                    "$ref": "#/components/schemas/Uuid"
+                  },
+                  "term": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 400,
+                    "description": "Срок займа",
+                    "examples": [
+                      1
+                    ]
+                  },
+                  "amount": {
+                    "type": "object",
+                    "description": "Запрашиваемая сумма",
+                    "$ref": "#/components/schemas/Amount"
+                  },
+                  "client": {
+                    "type": "object",
+                    "description": "Персональные данные клиента",
+                    "required": [
+                      "firstname",
+                      "lastname",
+                      "gender",
+                      "addresses",
+                      "attributes",
+                      "incomes",
+                      "documents",
+                      "phones"
+                    ],
+                    "properties": {
+                      "firstname": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "minLength": 2,
+                        "examples": [
+                          "Антон"
+                        ],
+                        "description": "Имя"
+                      },
+                      "lastname": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "minLength": 2,
+                        "examples": [
+                          "Кононов"
+                        ],
+                        "description": "Фамилия"
+                      },
+                      "gender": {
+                        "$ref": "#/components/schemas/Gender"
+                      },
+                      "work": {
+                        "nullable": true,
+                        "$ref": "#/components/schemas/Work",
+                        "description": "Место работы"
+                      },
+                      "secondname": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "minLength": 2,
+                        "examples": [
+                          "Германович"
+                        ],
+                        "nullable": true,
+                        "description": "Отчество"
+                      },
+                      "addresses": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Address"
+                        },
+                        "maxItems": 3,
+                        "minItems": 1,
+                        "uniqueItems": true,
+                        "description": "Адреса клиента"
+                      },
+                      "attributes": {
+                        "$ref": "#/components/schemas/PersonAttributes",
+                        "uniqueItems": true
+                      },
+                      "incomes": {
+                        "description": "Доходы клиентов",
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Income"
+                        },
+                        "maxItems": 4,
+                        "minItems": 0,
+                        "uniqueItems": true
+                      },
+                      "documents": {
+                        "description": "Документы клиента",
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Document"
+                        },
+                        "maxItems": 13
+                      },
+                      "phones": {
+                        "description": "Номера телефона клиента",
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Phone"
+                        },
+                        "maxItems": 5,
+                        "minItems": 0,
+                        "uniqueItems": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успешно создана заявка",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "id"
+                  ],
+                  "description": "Успешно создана заявка",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Uuid",
+                      "description": "Идентификатор заявки"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConstraintViolationList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "callbacks": {
+          "OnLoadCpg": {
+            "/{bank}/{$request.requestBody.externalApplicationId}/cpg": {
+              "get": {
+                "description": "Получить цифровой профиль клиента (ESIA)",
+                "responses": {
+                  "200": {
+                    "description": "Успешно получили цифровой профиль клиента, ***TODO: Опишем схему чуть позже***"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/application/{id}/offers": {
+      "get": {
+        "tags": [
+          "Операции над заявкой"
+        ],
+        "description": "Получить банковские предложения",
+        "summary": "Получить банковские предложения",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Идентификатор заявки",
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно получены банковские предложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "offers",
+                    "description",
+                    "status"
+                  ],
+                  "type": "object",
+                  "properties": {
+                    "offers": {
+                      "items": {
+                        "$ref": "#/components/schemas/Offer"
+                      },
+                      "type": "array",
+                      "description": "Банковские предложения"
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": 300,
+                      "description": "Дополнительная информация"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Статус банковских предложений. \n\n Возможные значения: \n\n- `WAITING` - В процессе оценки \n\n- `APPROVED` - Есть одобрения \n\n- `REJECTED` - Отказано в банковских предложениях",
+                      "enum": [
+                        "WAITING",
+                        "APPROVED",
+                        "REJECTED"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConstraintViolationList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/offer/{id}/print-draft-agreement": {
+      "post": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "Запросить\\Распечатать договор займ",
+        "summary": "Запросить\\Распечатать договор займ",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Идентификатор банковского предложения",
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно запущена печать договора займа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "loanAgreementId"
+                  ],
+                  "properties": {
+                    "loanAgreementId":{
+                      "type": "string",
+                      "description": "Идентификатор черновика займа"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConstraintViolationList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+
+      }
+    },
+    "/api/v1/loan-agreement/{id}/draft/status": {
+      "get": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "Получить статус печати договора займа",
+        "summary": "Получить статус печати договора займа",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Идентификатор не подписанного договора",
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно получен статус печати",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": [
+                    "id",
+                    "description",
+                    "status"
+                  ],
+                  "properties": {
+                    "id":{
+                      "type": "string",
+                      "description": "Идентификатор черновика займа"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Дополнительная информация",
+                      "maxLength": 300
+                    },
+                    "status":{
+                      "type": "string",
+                      "description": "Статус печати. \n\n Возможные значения: \n\n- `WAITING` - В процессе печати договора \n\n- `SUCCESS` - Договор успешно 'распечатан' \n\n- `ERROR` - Договор не удалось 'распечатать'",
+                      "enum": [
+                        "WAITING",
+                        "SUCCESS",
+                        "ERROR"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConstraintViolationList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+
+      }
+    },
+    "/api/v1/loan-agreement/{id}/draft": {
+      "get": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "Получить черновик договора займа",
+        "summary": "Получить черновик договора займа",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Идентификатор не подписанного договора",
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно получили черновик договор займа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["id", "url"],
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Uuid",
+                      "description": "Идентификатор договора займ"
+                    },
+                    "url": {
+                      "type": "string",
+                      "description": "Ссылка на договор",
+                      "maxLength": "400",
+                      "examples": [
+                        "https://vanta-black.ru/application/loan-agreement.pdf"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConstraintViolationList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-agreement/{id}/upload": {
+      "post": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "Загрузить подписанный договор займа",
+        "summary": "Загрузить подписанный договор займа",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Идентификатор не подписанного договора",
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Body request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["url", "sign"],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "Ссылка на договор",
+                    "maxLength": "400",
+                    "examples": [
+                      "https://vanta-black.ru/application/loan-agreement.pdf"
+                    ]
+                  },
+                  "sign": {
+                    "required": ["signAt", "code"],
+                    "type": "object",
+                    "description": "Информация о подписании договора займа",
+                    "properties": {
+                      "signAt": {
+                        "type": "string",
+                        "description": "Дата и время подписания договора займа",
+                        "format": "date-time"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "Код которым клиент подписал договор займа",
+                        "examples": [
+                          "9999"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Запустили процесс авторизации договора займа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["id"],
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Uuid",
+                      "description": "Идентификатор подписанного договора займ"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConstraintViolationList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-agreement/{id}/signed": {
+      "get": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "Получить подписанный договора займа",
+        "summary": "Получить подписанный договора займа",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Идентификатор подписанного договора",
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Получили подписанный договор займа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["id", "url"],
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Uuid",
+                      "description": "Идентификатор договора займ"
+                    },
+                    "url": {
+                      "type": "string",
+                      "description": "Ссылка на договор",
+                      "maxLength": "400",
+                      "examples": [
+                        "https://vanta-black.ru/application/loan-agreement.pdf"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConstraintViolationList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-agreement/{id}/details": {
+      "get": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "Получить детали авторизированного договора",
+        "summary": "Получить детали авторизированного договора",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Идентификатор авторизированного договора",
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Получили детали договора займа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["id", "term" ,"agreementNumber", "accountDetail", "repaymentDetail", "monthlyPayment" ,"term"],
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Uuid",
+                      "description": "Идентификатор договора займ"
+                    },
+                    "agreementNumber": {
+                      "type": "string",
+                      "description": "Номер договора займа",
+                      "examples": [
+                        "DNS7023227"
+                      ]
+                    },
+                    "term": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 400,
+                      "description": "Срок займа",
+                      "examples": [
+                        1
+                      ]
+                    },
+                    "monthlyPayment": {
+                      "description": "Сумма платежа в месяц",
+                      "$ref": "#/components/schemas/Amount"
+                    },
+                    "accountDetail": {
+                      "description": "Детали счета клиента",
+                      "$ref": "#/components/schemas/AccountDetail"
+                    },
+                    "repaymentDetail": {
+                      "description": "Детали счета для погашения займа",
+                      "$ref": "#/components/schemas/AccountDetail"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConstraintViolationList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-agreement/{id}/status": {
+      "get": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "Получить статус договора",
+        "summary": "Получить статус договора",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Идентификатор авторизированного договора",
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Получили статус договора",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["id", "status", "description"],
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Uuid",
+                      "description": "Идентификатор договора займ"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Статус договора. \n\n Возможные значения: \n\n- `WAITING` - В процессе авторизации договора \n\n- `SUCCESS` - Договор успешно авторизирован \n\n- `ERROR` - Договор не удалось авторизовать \n\n- `ERROR` - Договор не удалось авторизовать",
+                      "enum": [
+                        "WAITING",
+                        "SUCCESS",
+                        "ERROR",
+                        "REJECTED"
+                      ]
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": "300",
+                      "description": "Дополнительная информация"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConstraintViolationList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-agreement/{id}/financing": {
+      "post": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "***ОПЦИОНАЛЬНО***. Распоряжения клиентом на перевод денежных средств в другой банк.",
+        "summary": "Перевод денежных средств в другой банк",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Идентификатор авторизированного договора",
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Body request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["financing", "to"],
+                "properties": {
+                  "financing": {
+                    "required": ["financingAt", "code"],
+                    "type": "object",
+                    "description": "Информация об распоряжении клиента",
+                    "properties": {
+                      "financingAt": {
+                        "type": "string",
+                        "description": "Дата и время распоряжения клиента",
+                        "format": "date-time"
+                      },
+                      "code": {
+                        "type": "string",
+                        "description": "Код которым клиент распорядился",
+                        "examples": [
+                          "9999"
+                        ]
+                      }
+                    }
+                  },
+                  "to": {
+                    "description": "Информация куда осуществить финансирование",
+                    "allOf": [
+                      {"$ref":  "#/components/schemas/AccountDetail"}
+                    ]
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Запустили процесс финансирования в другой банк",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["id"],
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Uuid",
+                      "description": "Идентификатор авторизированного договора"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConstraintViolationList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-agreement/{id}/financing/status": {
+      "get": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "***ОПЦИОНАЛЬНО***. Получить статус финансирования в другой банк",
+        "summary": "Получить статус финансирования в другой банк",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "description": "Идентификатор авторизированного договора",
+              "$ref": "#/components/schemas/Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно получили статус финансирования",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["id", "status", "description"],
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Uuid",
+                      "description": "Идентификатор авторизированного договора"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Статус финансирования. \n\n Возможные значения: \n\n- `WAITING` - В процессе перевода денежных средств \n\n- `SUCCESS` - Успешно переведены денежные средства \n\n- `ERROR` - Денежные средства не удалось перевести",
+                      "enum": [
+                        "WAITING",
+                        "SUCCESS",
+                        "ERROR"
+                      ]
+                    },
+                    "description": {
+                      "type": "string",
+                      "maxLength": "300",
+                      "description": "Дополнительная информация"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConstraintViolationList"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Address": {
+        "required": [
+          "type",
+          "qualityIndex"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/AddressType"
+          },
+          "postalCode": {
+            "type": "string",
+            "maxLength": 6,
+            "examples": [
+              "630117"
+            ],
+            "nullable": true,
+            "description": "Индекс"
+          },
+          "federalDistrict": {
+            "type": "string",
+            "maxLength": 20,
+            "examples": [
+              "Сибирский"
+            ],
+            "nullable": true,
+            "description": "Федеральный округ"
+          },
+          "regionIsoCode": {
+            "type": "string",
+            "maxLength": 6,
+            "examples": [
+              "RU-NVS"
+            ],
+            "nullable": true,
+            "description": "ISO-код региона"
+          },
+          "cityArea": {
+            "type": "string",
+            "maxLength": 120,
+            "examples": [
+              "Строка"
+            ],
+            "nullable": true,
+            "description": "Административный округ (только для Москвы)"
+          },
+          "squareMeterPrice": {
+            "type": "string",
+            "examples": [
+              "100000"
+            ],
+            "nullable": true,
+            "description": "Рыночная стоимость м²"
+          },
+          "flatPrice": {
+            "type": "string",
+            "examples": [
+              "100000"
+            ],
+            "nullable": true,
+            "description": "Рыночная стоимость квартиры"
+          },
+          "postalBox": {
+            "type": "string",
+            "maxLength": 50,
+            "nullable": true,
+            "description": "Абонентский ящик"
+          },
+          "geonameId": {
+            "type": "string",
+            "examples": [
+              "10"
+            ],
+            "nullable": true,
+            "description": "Идентификатор объекта в базе GeoNames. Для российских адресов не заполняется"
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "UTC+3"
+            ],
+            "nullable": true,
+            "description": "Часовой пояс города для России, часовой пояс страны — для иностранных адресов. Если у страны несколько поясов, вернёт минимальный и максимальный через слеш: UTC+5/UTC+6\n"
+          },
+          "beltwayHit": {
+            "nullable": true,
+            "$ref": "#/components/schemas/BeltwayHit"
+          },
+          "beltwayDistance": {
+            "type": "string",
+            "examples": [
+              "10"
+            ],
+            "nullable": true,
+            "description": "Расстояние от кольцевой в км.\n\n Заполнено, только если beltwayHit = `OUT_MKAD` или `OUT_KAD`, иначе `null`"
+          },
+          "qcGeo": {
+            "nullable": true,
+            "$ref": "#/components/schemas/QcGeo"
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 120,
+            "examples": [
+              "Россия"
+            ],
+            "nullable": true,
+            "description": "Страна"
+          },
+          "countryIsoCode": {
+            "type": "string",
+            "examples": [
+              "RU"
+            ],
+            "nullable": true,
+            "description": "ISO-код страны\n"
+          },
+          "flatFiasId": {
+            "$ref": "#/components/schemas/Uuid",
+            "nullable": true,
+            "description": "ФИАС-код квартиры"
+          },
+          "houseFiasId": {
+            "$ref": "#/components/schemas/Uuid",
+            "nullable": true,
+            "description": "ФИАС-код дома"
+          },
+          "cityDistrictFiasId": {
+            "$ref": "#/components/schemas/Uuid",
+            "nullable": true,
+            "description": "ФИАС-код города"
+          },
+          "settlementFiasId": {
+            "$ref": "#/components/schemas/Uuid",
+            "nullable": true,
+            "description": "ФИАС-код населенного пункта"
+          },
+          "areaFiasId": {
+            "$ref": "#/components/schemas/Uuid",
+            "nullable": true,
+            "description": "ФИАС-код района"
+          },
+          "regionFiasId": {
+            "$ref": "#/components/schemas/Uuid",
+            "nullable": true,
+            "description": "ФИАС-код региона"
+          },
+          "cityFiasId": {
+            "$ref": "#/components/schemas/Uuid",
+            "nullable": true,
+            "description": "ФИАС-код города"
+          },
+          "fiasId": {
+            "$ref": "#/components/schemas/Uuid",
+            "nullable": true,
+            "description": "ФИАС-код адреса (идентификатор ФИАС)"
+          },
+          "streetFiasId": {
+            "$ref": "#/components/schemas/Uuid",
+            "nullable": true,
+            "description": "ФИАС-код улицы"
+          },
+          "flat": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "5"
+            ],
+            "nullable": true,
+            "description": "Квартира"
+          },
+          "flatArea": {
+            "type": "string",
+            "maxLength": 50,
+            "nullable": true,
+            "description": "Площадь квартиры"
+          },
+          "flatType": {
+            "type": "string",
+            "maxLength": 10,
+            "examples": [
+              "кв"
+            ],
+            "nullable": true,
+            "description": "Тип квартиры (сокращенный)"
+          },
+          "flatTypeFull": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "квартира"
+            ],
+            "nullable": true,
+            "description": "Тип квартиры"
+          },
+          "blockType": {
+            "type": "string",
+            "maxLength": 10,
+            "examples": [
+              "Строка"
+            ],
+            "nullable": true,
+            "description": "Тип корпуса/строения (сокращенный)"
+          },
+          "blockTypeFull": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "Строка"
+            ],
+            "nullable": true,
+            "description": "Тип корпуса/строения"
+          },
+          "block": {
+            "type": "string",
+            "maxLength": 50,
+            "nullable": true,
+            "description": "Корпус/строение"
+          },
+          "houseType": {
+            "type": "string",
+            "maxLength": 10,
+            "examples": [
+              "д"
+            ],
+            "nullable": true,
+            "description": "Тип дома (сокращенный)"
+          },
+          "houseTypeFull": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "дом"
+            ],
+            "nullable": true,
+            "description": "Тип дома"
+          },
+          "house": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "9Б"
+            ],
+            "nullable": true,
+            "description": "Дом"
+          },
+          "settlementWithType": {
+            "type": "string",
+            "maxLength": 131,
+            "nullable": true,
+            "description": "Населенный пункт с типом"
+          },
+          "settlementType": {
+            "type": "string",
+            "maxLength": 10,
+            "examples": [
+              "Строка"
+            ],
+            "nullable": true,
+            "description": "Тип населенного пункта (сокращенный)"
+          },
+          "settlementTypeFull": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "Строка"
+            ],
+            "nullable": true,
+            "description": "Тип населенного пункта"
+          },
+          "settlement": {
+            "type": "string",
+            "maxLength": 120,
+            "nullable": true,
+            "description": "Населенный пункт"
+          },
+          "areaWithType": {
+            "type": "string",
+            "maxLength": 131,
+            "examples": [
+              "Строка"
+            ],
+            "nullable": true,
+            "description": "Район в регионе с типом"
+          },
+          "areaType": {
+            "type": "string",
+            "maxLength": 10,
+            "examples": [
+              "Строка"
+            ],
+            "nullable": true,
+            "description": "Тип района в регионе (сокращенный)"
+          },
+          "areaTypeFull": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "Строка"
+            ],
+            "nullable": true,
+            "description": "Тип района в регионе"
+          },
+          "area": {
+            "type": "string",
+            "maxLength": 120,
+            "examples": [
+              "Строка"
+            ],
+            "nullable": true,
+            "description": "Район в регионе"
+          },
+          "cityDistrictWithType": {
+            "type": "string",
+            "maxLength": 131,
+            "examples": [
+              "р-н Советский"
+            ],
+            "nullable": true,
+            "description": "Район города с типом"
+          },
+          "cityDistrictType": {
+            "type": "string",
+            "maxLength": 10,
+            "examples": [
+              "р-н"
+            ],
+            "nullable": true,
+            "description": "Тип района города (сокращенный)"
+          },
+          "cityDistrictTypeFull": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "район"
+            ],
+            "nullable": true,
+            "description": "Тип района города"
+          },
+          "cityDistrict": {
+            "type": "string",
+            "maxLength": 120,
+            "examples": [
+              "Советский"
+            ],
+            "nullable": true,
+            "description": "Район города"
+          },
+          "cityWithType": {
+            "type": "string",
+            "maxLength": 131,
+            "examples": [
+              "г Новосибирск"
+            ],
+            "nullable": true,
+            "description": "Город с типом"
+          },
+          "cityType": {
+            "type": "string",
+            "maxLength": 10,
+            "examples": [
+              "г"
+            ],
+            "nullable": true,
+            "description": "Тип города (сокращенный)"
+          },
+          "cityTypeFull": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "город"
+            ],
+            "nullable": true,
+            "description": "Тип города"
+          },
+          "city": {
+            "type": "string",
+            "maxLength": 120,
+            "examples": [
+              "Новосибирск"
+            ],
+            "nullable": true,
+            "description": "Город"
+          },
+          "streetType": {
+            "type": "string",
+            "maxLength": 10,
+            "examples": [
+              "ул"
+            ],
+            "nullable": true,
+            "description": "Тип улицы (сокращенный)"
+          },
+          "streetTypeFull": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "улица"
+            ],
+            "nullable": true,
+            "description": "Тип улицы"
+          },
+          "street": {
+            "type": "string",
+            "maxLength": 120,
+            "examples": [
+              "Арбузова"
+            ],
+            "nullable": true,
+            "description": "Улица"
+          },
+          "streetWithType": {
+            "type": "string",
+            "maxLength": 131,
+            "examples": [
+              "ул Арбузова"
+            ],
+            "nullable": true,
+            "description": "Улица с типом"
+          },
+          "regionType": {
+            "type": "string",
+            "maxLength": 10,
+            "examples": [
+              "обл"
+            ],
+            "nullable": true,
+            "description": "Тип региона (сокращенный)"
+          },
+          "regionTypeFull": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "область"
+            ],
+            "nullable": true,
+            "description": "Тип региона"
+          },
+          "region": {
+            "type": "string",
+            "maxLength": 120,
+            "examples": [
+              "Новосибирская"
+            ],
+            "nullable": true,
+            "description": "Регион"
+          },
+          "regionWithType": {
+            "type": "string",
+            "maxLength": 131,
+            "examples": [
+              "Новосибирская обл"
+            ],
+            "nullable": true,
+            "description": "Регион с типом"
+          },
+          "taxOfficeLegal": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "5473"
+            ],
+            "nullable": true,
+            "description": "Код ИФНС для организаций"
+          },
+          "taxOffice": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "5473"
+            ],
+            "nullable": true,
+            "description": "Код ИФНС для физических лиц"
+          },
+          "okato": {
+            "type": "string",
+            "maxLength": 11,
+            "examples": [
+              "50401384000"
+            ],
+            "nullable": true,
+            "description": "Код ОКАТО"
+          },
+          "oktmo": {
+            "type": "string",
+            "maxLength": 11,
+            "examples": [
+              "50401384000"
+            ],
+            "nullable": true,
+            "description": "Код ОКТМО"
+          },
+          "regionKladrId": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "5400000000000"
+            ],
+            "nullable": true,
+            "description": "КЛАДР-код региона"
+          },
+          "houseKladrId": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "5400000100000490004"
+            ],
+            "nullable": true,
+            "description": "КЛАДР-код дома"
+          },
+          "streetKladrId": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "54000001000004900"
+            ],
+            "nullable": true,
+            "description": "КЛАДР-код улицы"
+          },
+          "cityKladrId": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "5400000100000"
+            ],
+            "nullable": true,
+            "description": "КЛАДР-код города"
+          },
+          "settlementKladrId": {
+            "type": "string",
+            "examples": [
+              "10"
+            ],
+            "nullable": true,
+            "description": "КЛАДР-код населенного пункта"
+          },
+          "areaKladrId": {
+            "type": "string",
+            "examples": [
+              "10"
+            ],
+            "nullable": true,
+            "description": "КЛАДР-код района"
+          },
+          "cityDistrictKladrId": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "10"
+            ],
+            "nullable": true,
+            "description": "КЛАДР-код района города (не заполняется)"
+          },
+          "kladrId": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "5400000100000490004"
+            ],
+            "nullable": true,
+            "description": "КЛАДР-код адреса"
+          },
+          "capitalMarker": {
+            "nullable": true,
+            "$ref": "#/components/schemas/CapitalMarker"
+          },
+          "fiasCode": {
+            "type": "string",
+            "maxLength": 50,
+            "examples": [
+              "54000001000000000490004"
+            ],
+            "nullable": true,
+            "description": "Не заполняется, используйте fiasId",
+            "deprecated": true
+          },
+          "fiasLevel": {
+            "nullable": true,
+            "$ref": "#/components/schemas/FiasLevel"
+          },
+          "fiasActualityState": {
+            "type": "string",
+            "examples": [
+              "49"
+            ],
+            "nullable": true,
+            "description": "Признак актуальности адреса в ФИАС: \n\n `0` - Актуальный \n\n `1-50` - Переименован \n\n  `51` - Переподчинен \n\n `99` - Удален"
+          },
+          "geoLat": {
+            "type": "string",
+            "maxLength": 12,
+            "examples": [
+              "54.8709575"
+            ],
+            "nullable": true,
+            "description": "Координаты широты"
+          },
+          "geoLon": {
+            "type": "string",
+            "maxLength": 12,
+            "examples": [
+              "83.1034345"
+            ],
+            "nullable": true,
+            "description": "Координаты долготы"
+          },
+          "metro": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Metro"
+            },
+            "maxItems": 3,
+            "description": "Список ближайших станций метро (до трёх штук)"
+          },
+          "historyValues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "AddressType": {
+        "type": "string",
+        "description": "Типы адресов:\n\n- `WORK` - адрес работы\n- `FACTUAL` - фактический адрес проживания\n- `REGISTER` - адрес регистрации\n- `FLAT_FOR_DEPOSIT` - имущество имеющееся",
+        "enum": [
+          "REGISTER",
+          "FACTUAL",
+          "WORK",
+          "FLAT_FOR_DEPOSIT"
+        ]
+      },
+      "Gender": {
+        "description": "Гендеры:\n\n- `men` - мужчина\n- `women` - женщина",
+        "type": "string",
+        "enum": [
+          "men",
+          "women"
+        ]
+      },
+      "BeltwayHit": {
+        "type": "string",
+        "description": "Внутри кольцевой:\n\n- `IN_MKAD` - внутри МКАД (Москва)\n- `OUT_MKAD` - за МКАД (Москва и область)\n- `IN_KAD` - внутри КАД (Санкт-Петербург)\n- `OUT_KAD` - за КАД (Санкт-Петербург и область)\n- `null` - в остальных случаях",
+        "enum": [
+          "IN_MKAD",
+          "OUT_MKAD",
+          "IN_KAD",
+          "OUT_KAD"
+        ]
+      },
+      "QcGeo": {
+        "type": "string",
+        "description": "Код точности координат:\n\n- `0` - точные координаты\n- `1` - ближайший дом\n- `2` - улица\n- `3` - населенный пункт\n- `4` - город\n- `5` - координаты не определены",
+        "enum": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ]
+      },
+      "CapitalMarker": {
+        "type": "string",
+        "description": "Признак центра района или региона:\n\n- `0` - Ничего из перечисленного (Московская обл, г Балашиха)\n- `1` - Центр района (Московская обл, Одинцовский р-н, г Одинцово)\n- `2` - Центр региона (Новосибирская обл, г Новосибирск)\n- `3` - Центр района и региона (Томская обл, г Томск)\n- `4` - Центральный район региона (Тюменская обл, Тюменский р-н)",
+        "enum": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      },
+      "FiasLevel": {
+        "type": "string",
+        "description": "Уровень детализации, до которого адрес найден в ФИАС:\n\n- `0` - страна\n- `1` - регион\n- `3` - район\n- `3` - район\n- `4` - город\n- `5` - район города\n- `6` - населенный пункт\n- `7` - улица\n- `8` - дом\n- `9` - квартира\n- `65` - планировочная структура\n- `90` - доп. территория\n- `91` - улица в доп. территории\n- `-1` - иностранный или пустой",
+        "enum": [
+          "0",
+          "1",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "65",
+          "75",
+          "-1"
+        ]
+      },
+      "Metro": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "examples": [
+              "Бабушкинская"
+            ],
+            "description": "Название станции"
+          },
+          "line": {
+            "type": "string",
+            "maxLength": 255,
+            "examples": [
+              "Калужско-Рижская"
+            ],
+            "description": "Название линии"
+          },
+          "distance": {
+            "type": "string",
+            "examples": [
+              "10000"
+            ],
+            "description": "Расстояние до станции в километрах"
+          }
+        },
+        "type": "object"
+      },
+      "Date": {
+        "title": "Дата",
+        "type": "string",
+        "format": "d.m.Y",
+        "pattern": "[0-9]{2}.[0-9]{2}.[0-9]{4}",
+        "examples": [
+          "13.05.2005"
+        ]
+      },
+      "PersonAttribute": {
+        "type": "string",
+        "description": "Атрибуты клиента:\n\n- `OWNER_FLAT` - владелец квартиры\n- `OWNER_VILLA` - владелец виллы\n- `INCOME_FROM_SALARY` - имеет доход от зарплаты\n- `INCOME_FROM_PENSION` - имеет доход от пенсии\n- `INCOME_FROM_RENT` - имеет доход от аренды\n- `NO_RESIDENT_USA` - не является резидентом Соединенных Шатов Америки\n- `ADDRESSES_EQUAL` - адрес регистрации совпадает с адресом проживания\n- `PENSIONER` - является пенсионером\n- `PUBLIC_OFFICIAL` - является публичным должностным лицом\n- `RELATIVE_PUBLIC_OFFICIAL` - является родственником публичного должностного лица",
+        "enum": [
+          "OWNER_FLAT",
+          "OWNER_VILLA",
+          "INCOME_FROM_SALARY",
+          "INCOME_FROM_PENSION",
+          "INCOME_FROM_RENT",
+          "ADDRESSES_EQUAL",
+          "NO_RESIDENT_USA",
+          "PENSIONER",
+          "PUBLIC_OFFICIAL",
+          "RELATIVE_PUBLIC_OFFICIAL"
+        ]
+      },
+      "PersonAttributes": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PersonAttribute"
+        },
+        "description": "Атрибуты клиента:\n\n- `OWNER_FLAT` - владелец квартиры\n- `OWNER_VILLA` - владелец виллы\n- `INCOME_FROM_SALARY` - имеет доход от зарплаты\n- `INCOME_FROM_PENSION` - имеет доход от пенсии\n- `INCOME_FROM_RENT` - имеет доход от аренды\n- `NO_RESIDENT_USA` - не является резидентом Соединенных Шатов Америки\n- `ADDRESSES_EQUAL` - адрес регистрации совпадает с адресом проживания\n- `PENSIONER` - является пенсионером\n- `PUBLIC_OFFICIAL` - является публичным должностным лицом\n- `RELATIVE_PUBLIC_OFFICIAL` - является родственником публичного должностного лица"
+      },
+      "Income": {
+        "required": [
+          "type",
+          "amount"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/IncomeType"
+          },
+          "amount": {
+             "description": "Сумма",
+             "$ref": "#/components/schemas/Amount"
+          }
+        },
+        "type": "object"
+      },
+      "IncomeType": {
+        "type": "string",
+        "description": "Типы доходов:\n\n- `MONTH` - месячный\n- `FAMILY` - семейный\n- `ADDITIONAL` - дополнительный доход \n- `ESIA_YEARLY` - годовой доход, полученный из ЕСИА (ГосУслуги)",
+        "enum": [
+          "MONTH",
+          "ADDITIONAL",
+          "FAMILY",
+          "ESIA_YEARLY"
+        ]
+      },
+      "DocumentType": {
+        "title": "Тип документа",
+        "type": "string",
+        "enum": [
+          "DRIVER_LICENSE",
+          "INN",
+          "PASSPORT_RUSSIAN_FEDERATION",
+          "PASSPORT_RUSSIAN_FEDERATION_INTERNATIONAL",
+          "SNILS",
+          "STS",
+          "PTS",
+          "EPTS"
+        ],
+        "description": "Типы документов:\n\n- `INN` - идентификационный номер налогоплательщика\n- `PTS` - паспорт транспортного средства\n- `STS` - свидетельство регистрации транспортного средства\n- `EPTS` - электронный паспорт транспортного средства\n- `SNILS` - страховой номер индивидуального лицевого счёта\n- `DRIVER_LICENSE` - водительские права\n- `PASSPORT_RUSSIAN_FEDERATION` - паспорт Российской федерации\n- `PREVIOUS_PASSPORT_RUSSIAN_FEDERATION` - Предыдущий паспорт Российской федерации \n- `PASSPORT_RUSSIAN_FEDERATION_INTERNATIONAL` - заграничный паспорт Российской Федерации\n\n"
+      },
+      "Document": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object",
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "PASSPORT_RUSSIAN_FEDERATION": "#/components/schemas/RussianPassportDocument",
+            "PREVIOUS_PASSPORT_RUSSIAN_FEDERATION": "#/components/schemas/PreviousRussianPassportDocument",
+            "PASSPORT_RUSSIAN_FEDERATION_INTERNATIONAL": "#/components/schemas/RussianInternationalPassportDocument",
+            "INN": "#/components/schemas/InnDocument",
+            "SNILS": "#/components/schemas/SnilsDocument",
+            "DRIVER_LICENSE": "#/components/schemas/DriverLicenseDocument",
+            "PTS": "#/components/schemas/PtsDocument",
+            "EPTS": "#/components/schemas/EptsDocument",
+            "STS": "#/components/schemas/StsDocument"
+          }
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/RussianPassportDocument"
+          },
+          {
+            "$ref": "#/components/schemas/RussianInternationalPassportDocument"
+          },
+          {
+            "$ref": "#/components/schemas/InnDocument"
+          },
+          {
+            "$ref": "#/components/schemas/SnilsDocument"
+          },
+          {
+            "$ref": "#/components/schemas/DriverLicenseDocument"
+          },
+          {
+            "$ref": "#/components/schemas/PtsDocument"
+          },
+          {
+            "$ref": "#/components/schemas/EptsDocument"
+          },
+          {
+            "$ref": "#/components/schemas/StsDocument"
+          }
+        ]
+      },
+      "RussianDivisionCode": {
+        "type": "string",
+        "description": "Код подразделения Российского паспорта",
+        "examples": [
+          "000-000"
+        ],
+        "pattern": "\\d{3}-\\d{3}"
+      },
+      "RussianPassportSeries": {
+        "type": "string",
+        "description": "Серия Российского паспорта",
+        "examples": [
+          "0000"
+        ],
+        "pattern": "\\d{4}"
+      },
+      "RussianPassportNumber": {
+        "type": "string",
+        "description": "Номер Российского паспорта",
+        "examples": [
+          "000000"
+        ],
+        "pattern": "\\d{6}"
+      },
+      "PreviousRussianPassportDocument": {
+        "description": "Предыдущий паспорт Российской федерации",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "divisionCode",
+          "birthAt",
+          "birthPlace"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          },
+          "series": {
+            "$ref": "#/components/schemas/RussianPassportSeries"
+          },
+          "number": {
+            "$ref": "#/components/schemas/RussianPassportNumber"
+          },
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи паспорта"
+          },
+          "divisionCode": {
+            "$ref": "#/components/schemas/RussianDivisionCode"
+          },
+          "birthAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата рождения",
+            "examples": [
+              "18.01.1996"
+            ]
+          },
+          "birthPlace": {
+            "type": "string",
+            "maxLength": 355,
+            "examples": [
+              "C.КОЧКИ КОЧКОВСКОГО Р-НА НОВОСБИРСКОЙ ОБЛ"
+            ],
+            "description": "Место рождения"
+          }
+        },
+        "type": "object"
+      },
+      "RussianPassportDocument": {
+        "description": "Паспорт Российской федерации",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "issuedBy",
+          "divisionCode",
+          "birthAt",
+          "birthPlace"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          },
+          "series": {
+            "$ref": "#/components/schemas/RussianPassportSeries"
+          },
+          "number": {
+            "$ref": "#/components/schemas/RussianPassportNumber"
+          },
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи паспорта"
+          },
+          "issuedBy": {
+            "type": "string",
+            "maxLength": 355,
+            "description": "Кем выдан паспорт"
+          },
+          "divisionCode": {
+            "$ref": "#/components/schemas/RussianDivisionCode"
+          },
+          "birthAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата рождения",
+            "examples": [
+              "18.01.1996"
+            ]
+          },
+          "birthPlace": {
+            "type": "string",
+            "maxLength": 355,
+            "examples": [
+              "C.КОЧКИ КОЧКОВСКОГО Р-НА НОВОСБИРСКОЙ ОБЛ"
+            ],
+            "description": "Место рождения"
+          }
+        },
+        "type": "object"
+      },
+      "RussianInternationalPassportDocument": {
+        "description": "Заграничный паспорт Российской федерации",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "issuedBy"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          },
+          "series": {
+            "$ref": "#/components/schemas/RussianPassportSeries"
+          },
+          "number": {
+            "$ref": "#/components/schemas/RussianPassportNumber"
+          },
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи паспорта"
+          },
+          "issuedBy": {
+            "type": "string",
+            "maxLength": 355,
+            "description": "Кем выдан паспорт"
+          }
+        },
+        "type": "object"
+      },
+      "InnDocument": {
+        "description": "Идентификационный номер налогоплательщика",
+        "required": [
+          "type",
+          "number"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "7743013902"
+            ],
+            "description": "Идентификационный номер налогоплательщика",
+            "pattern": "\\d{12}"
+          }
+        },
+        "type": "object"
+      },
+      "SnilsDocument": {
+        "required": [
+          "type",
+          "number"
+        ],
+        "description": "Cтраховой номер индивидуального лицевого счёта",
+        "properties": {
+          "number": {
+            "type": "string",
+            "examples": [
+              "123-456-789 00"
+            ],
+            "pattern": "\\d{3}-\\d{3}-\\d{3} \\d{2}",
+            "description": "Cтраховой номер индивидуального лицевого счёта"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object"
+      },
+      "DriverLicenseDocument": {
+        "description": "Водительские права",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "issuedBy"
+        ],
+        "properties": {
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи прав"
+          },
+          "issuedBy": {
+            "type": "string",
+            "description": "Кем выдан паспорт"
+          },
+          "series": {
+            "type": "string",
+            "examples": [
+              "1234"
+            ],
+            "description": "Серия прав"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "123456"
+            ],
+            "description": "Номер прав"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object"
+      },
+      "PtsDocument": {
+        "description": "Паспорт транспортного средства",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "issuedBy"
+        ],
+        "properties": {
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи прав"
+          },
+          "issuedBy": {
+            "type": "string",
+            "description": "Кем выдан паспорт"
+          },
+          "series": {
+            "type": "string",
+            "examples": [
+              "1234"
+            ],
+            "description": "Серия прав"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "123456"
+            ],
+            "description": "Номер прав"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object"
+      },
+      "EptsDocument": {
+        "description": "Электронный паспорт транспортного средства",
+        "required": [
+          "type",
+          "number",
+          "issuedAt"
+        ],
+        "properties": {
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи ЭПТС"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "123456789012345"
+            ],
+            "description": "Номер ЭПТС"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object"
+      },
+      "StsDocument": {
+        "description": "Свидетельство о регистрации транспортного средства",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "issuedBy"
+        ],
+        "properties": {
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи СТС"
+          },
+          "issuedBy": {
+            "type": "string",
+            "description": "Кем выдан СТС"
+          },
+          "series": {
+            "type": "string",
+            "examples": [
+              "0000"
+            ],
+            "description": "Серия СТС"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "123456"
+            ],
+            "description": "Номер СТС"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object"
+      },
+      "Work": {
+        "description": "Место работы",
+        "required": [
+          "form",
+          "name",
+          "industry",
+          "taxNumber",
+          "attribute",
+          "employmentType",
+          "experienceInCompany",
+          "experienceInPosition"
+        ],
+        "properties": {
+          "industry": {
+            "$ref": "#/components/schemas/Industry"
+          },
+          "experienceInCompany": {
+            "$ref": "#/components/schemas/Level"
+          },
+          "experienceInPosition": {
+            "$ref": "#/components/schemas/Level"
+          },
+          "employmentType": {
+            "$ref": "#/components/schemas/WorkStatus"
+          },
+          "position": {
+            "nullable": true,
+            "$ref": "#/components/schemas/Position"
+          },
+          "positionName": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "nullable": true,
+            "description": "Название должности"
+          },
+          "form": {
+            "type": "string",
+            "maxLength": 5,
+            "minLength": 5,
+            "examples": [
+              "12345"
+            ],
+            "description": "Организационная правовая форма"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "description": "Название компании"
+          },
+          "taxNumber": {
+            "$ref": "#/components/schemas/TaxNumberUnion"
+          },
+          "attribute": {
+            "$ref": "#/components/schemas/WorkAttributes"
+          }
+        },
+        "type": "object"
+      },
+      "Position": {
+        "type": "string",
+        "description": "Занимаемая позиция:\n\n- `WORKER` - рабочий\n- `MANAGER` - руководитель\n- `GENERAL_MANAGER` - генеральный директор\n- `SPECIALIST` - специалист\n- `SERVICE_STAFF` - обслуживающий персонал\n- `FOUNDER` - учредитель",
+        "enum": [
+          "WORKER",
+          "FOUNDER",
+          "MANAGER",
+          "SPECIALIST",
+          "SERVICE_STAFF",
+          "GENERAL_MANAGER"
+        ]
+      },
+      "TaxNumberUnion": {
+        "type": "string",
+        "pattern": "\\d{10}(\\d{2})?",
+        "description": "Налоговый номер индивидуального предпринимателя или физического лица",
+        "examples": [
+          "752276213667"
+        ]
+      },
+      "Industry": {
+        "description": "Сфера деятельности:\n\n- `FEC` - ТЭК\n- `OTHER` - Иное\n- `TOURISM` - Туризм\n- `CATERING` - Общественное питание, в том числе предпр. быстрого\n- `PUBLISHING` - Издательская деятельность\n- `RESTAURANTS` - Рестораны\n- `RETAIL_TRADE` - Розничная торговля\n- `AGRICULTURE` - Сельское хозяйство\n- `SHOW_BUSINESS` - Шоу бизнес\n- `PUBLIC_HEALTH` - Здравоохранение государственное\n- `PRIVATE_HEALTH` - Здравоохранение коммерческое\n- `LAW_ENFORCEMENT` - Правоохранительные органы, таможня\n- `WHOLESALE_TRADE` -  Торговля оптовая\n- `FINANCE_BANKING` - Банкинг\n- `PUBLIC_EDUCATION` - Государственное образование\n- `PRIVATE_EDUCATION` -  Коммерческое образование\n- `SCIENCE_AND_CULTURE` - Наука и культура\n- `BOROCHNYE_PRODUCTION` - Cборочные производства (в т.ч. сборка мебели)\n- `MILITARY_ESTABLISHMENT` - Вооруженные силы\n- `LIGHT_AND_FOOD_INDUSTRY` - Легкая и пищевая промышленность\n- `BEAUTY_AND_HEALTH_SALONS` - Салоны красоты и здоровья\n- `LEGAL_AND_NOTARIAL_SERVICES` - Юридические и нотариальны услуги\n- `TRANSPORT_AND_COMMUNICATIONS` - Транспорт и связь\n- `ADVERTISING_PR_AGENCIES_MEDIA` - Реклама, PR агенства, СМИ\n- `FEDERAL_AND_MUNICIPAL_CONTROL` - Федеральный и муниципальный управление\n- `EXTRACTIVE_INDUSTRY_EXEPECT_FEC` - Доб.промышленность(кроме ТЭК)\n- `UTILITIES_SERVICES_ROAD_SERVICES` - Коммун.хоз/Сфера услуг/Дорожные Службы\n- `INFORMATICS_AND_TELECOMMUNICATIONS` - Информатика и телекоммуникации\n- `PRIVATE_DETECTIVE_SECURITY_COMPANY` -  Частный детектив/Охранное предприятие\n- `CHEMISTRY_PERFUMERY_PHARMACEUTICALS` - Химия/Парфюмерия/Фармацевтика\n- `MECHANICAL_ENGINEERING_AND_METALWORKING` - Машиностроение и металлообработка\n- `CONSTRUCTION_PRODUCTION_OF_BUILDING_MATERIALS` - Строительство, производство стройматериалов",
+        "type": "string",
+        "enum": [
+          "MILITARY_ESTABLISHMENT",
+          "EXTRACTIVE_INDUSTRY_EXEPECT_FEC",
+          "PUBLIC_HEALTH",
+          "PRIVATE_HEALTH",
+          "PUBLISHING",
+          "INFORMATICS_AND_TELECOMMUNICATIONS",
+          "UTILITIES_SERVICES_ROAD_SERVICES",
+          "LIGHT_AND_FOOD_INDUSTRY",
+          "MECHANICAL_ENGINEERING_AND_METALWORKING",
+          "SCIENCE_AND_CULTURE",
+          "PUBLIC_EDUCATION",
+          "PRIVATE_EDUCATION",
+          "CATERING",
+          "LAW_ENFORCEMENT",
+          "ADVERTISING_PR_AGENCIES_MEDIA",
+          "RESTAURANTS",
+          "BEAUTY_AND_HEALTH_SALONS",
+          "BOROCHNYE_PRODUCTION",
+          "AGRICULTURE",
+          "CONSTRUCTION_PRODUCTION_OF_BUILDING_MATERIALS",
+          "WHOLESALE_TRADE",
+          "RETAIL_TRADE",
+          "TRANSPORT_AND_COMMUNICATIONS",
+          "TOURISM",
+          "FEC",
+          "SHOW_BUSINESS",
+          "FEDERAL_AND_MUNICIPAL_CONTROL",
+          "FINANCE_BANKING",
+          "CHEMISTRY_PERFUMERY_PHARMACEUTICALS",
+          "PRIVATE_DETECTIVE_SECURITY_COMPANY",
+          "LEGAL_AND_NOTARIAL_SERVICES",
+          "OTHER"
+        ]
+      },
+      "WorkAttributes": {
+        "type": "array",
+        "description": "Аттрибуты работы: \n\n `TYPE_COMMERCIAL` - Коммерческая организация \n\n `TYPE_NON_COMMERCIAL` - Некоммерческая организация \n\n  `STATE_OWNED` - Государственная организация \n\n `STATE_NON_OWNED` - Не государственная организация \n\n `FOREIGN_CAPITAL` - Имеет иностранный капитал \n\n `FOREIGN_NON_CAPITAL` - Не имеет иностранный капитал",
+        "items": {
+          "$ref": "#/components/schemas/WorkAttribute"
+        },
+        "uniqueItems": true
+      },
+      "WorkAttribute": {
+        "type": "string",
+        "description": "Аттрибуты работы:\n\n- `TYPE_COMMERCIAL` - коммерческая организация\n- `TYPE_NON_COMMERCIAL` - некоммерческая организация\n- `STATE_OWNED` - государственная организация\n- `STATE_NON_OWNED` - не государственная организация\n- `FOREIGN_CAPITAL` - имеет иностранный капитал\n- `FOREIGN_NON_CAPITAL` - не имеет иностранного капитала",
+        "enum": [
+          "TYPE_COMMERCIAL",
+          "TYPE_NON_COMMERCIAL",
+          "STATE_OWNED",
+          "STATE_NON_OWNED",
+          "FOREIGN_CAPITAL",
+          "FOREIGN_NON_CAPITAL"
+        ]
+      },
+      "WorkStatus": {
+        "type": "string",
+        "description": "Статус занятости:\n\n- `WORKING` - работающий\n- `WORKING_FOR_HIRE` - работает по найму\n- `WORKING_FOR_MYSELF` - самозанятый",
+        "enum": [
+          "WORKING",
+          "WORKING_FOR_HIRE",
+          "WORKING_FOR_MYSELF"
+        ]
+      },
+      "Level": {
+        "type": "string",
+        "description": "Промежутки времени:\n\n- `LOW` - 6 месяцев и меньше\n- `MEDIUM` - 0.7 - 3 года\n- `HIGH` - 3-5 лет\n- `VERY_HIGH` - 5-7 лет\n- `EXTREME` - 7 лет и более",
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "VERY_HIGH",
+          "EXTREME"
+        ]
+      },
+      "Phone": {
+        "required": [
+          "type",
+          "number"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/PhoneType"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "+79994652397"
+            ],
+            "description": "Номер телефона"
+          }
+        },
+        "type": "object"
+      },
+      "PhoneType": {
+        "type": "string",
+        "description": "Типы номеров:\n\n- `WORK` - рабочий\n- `HOME` - домашний\n- `CONTACT_PERSON` - контактного лица\n- `SECOND_CONTACT_PERSON` - второго контактного лица\n - `ESIA` - номер, указанный в Госуслугах/ЕСИА",
+        "enum": [
+          "WORK",
+          "HOME",
+          "CONTACT_PERSON",
+          "SECOND_CONTACT_PERSON",
+          "ESIA"
+        ]
+      },
+      "Currency": {
+        "description": "Код валюты, <span style=\"color:red\">**стандарт ISO 4217**</span>",
+        "type": "string",
+        "pattern": "^[A-Z]{3}$",
+        "examples": [
+          "RUB",
+          "USD"
+        ]
+      },
+      "Uuid": {
+        "title": "Универсально уникальный идентификатор",
+        "type": "string",
+        "format": "uuid",
+        "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+        "examples": [
+          "00000000-0000-0000-0000-000000000000"
+        ]
+      },
+      "Amount": {
+        "type": "object",
+        "required": ["value", "currency"],
+        "properties": {
+          "value": {
+            "type": "string",
+            "pattern": "^\\\\d+$",
+            "examples": [
+              "100"
+            ],
+            "description": "Сумма в <span style=\"color:red\">**копейках**</span>"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "examples": [
+              "https://tools.ietf.org/html/rfc2616#section-10"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "examples": [
+              "$title"
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "examples": [
+              0
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "examples": [
+              "$detail"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ConstraintViolation": {
+        "required": ["propertyPath", "title", "type"],
+        "properties": {
+          "propertyPath": {
+            "type": "string",
+            "examples": [
+              "incomes"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "examples": [
+              "Эта коллекция должна содержать только уникальные элементы."
+            ]
+          },
+          "type": {
+            "type": "string",
+            "examples": [
+              "urn:uuid:7911c98d-b845-4da0-94b7-a8dac36bc55a"
+            ]
+          },
+          "parameters": {
+            "type": "object",
+            "examples": [
+              {
+                "{{ value }}": "array"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ConstraintViolationList": {
+        "required": ["type", "title", "detail", "violations"],
+        "description": "List errors validations",
+        "properties": {
+          "type": {
+            "type": "string",
+            "examples": [
+              "Bad request"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "examples": [
+              "Validation Failed"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "examples": [
+              "incomes: Эта коллекция должна содержать только уникальные элементы."
+            ]
+          },
+          "violations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConstraintViolation"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "Offer": {
+        "required": ["id", "term", "maxAmount", "minAmount", "rate", "services"],
+        "properties": {
+          "id": {
+            "description": "Идентификатор банковского предложения",
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "term": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "description": "Срок кредитования **в месяцах**"
+          },
+          "maxAmount": {
+            "type": "string",
+            "description": "Максимальный доступный кредитный лимит в <span style=\"color:red\">**копейках**</span>",
+            "format": "int64",
+            "examples": ["200"]
+          },
+          "minAmount": {
+            "type": "string",
+            "description": "Минимальный доступный кредитный лимит в <span style=\"color:red\">**копейках**</span>",
+            "format": "int64",
+            "examples": ["100"]
+          },
+          "rate": {
+            "type": "string",
+            "examples": ["16.5"],
+            "description": "Ставка по займу",
+            "format": "float"
+          },
+          "services": {
+            "type": "array",
+            "description": "Дополнительные услуги",
+            "items": {
+              "$ref": "#/components/schemas/Service"
+            }
+          }
+        },
+        "type": "object"
+      },
+      "Service": {
+        "required": ["id", "name", "amount"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref":  "#/components/schemas/Uuid",
+            "description": "Идентификатор дополнительной услуги"
+          },
+          "name": {
+            "type": "string",
+            "description": "Название дополнительной услуги",
+            "minLength": 3,
+            "maxLength": 255
+          },
+          "amount": {
+            "type": "string",
+            "examples": ["100"],
+            "format": "int64",
+            "description": "Стоимость дополнительной услуги в <span style=\"color:red\">**копейках**</span>"
+          }
+        }
+      },
+      "AccountDetail": {
+        "description": "Детали счета",
+        "required": ["bill", "fullName"],
+        "type": "object",
+        "properties": {
+          "bill": {
+            "type": "string",
+            "description": "Счет клиента",
+            "examples": ["50770335000000002733"]
+          },
+          "fullName": {
+            "type": "string",
+            "description": "ФИО Клиента",
+            "examples": [
+              "Shashkov Vladislav Maksimovich"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
