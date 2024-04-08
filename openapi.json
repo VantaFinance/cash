@@ -253,7 +253,7 @@
           "OnLoadCpg": {
             "/{bank}/{$request.requestBody.externalApplicationId}/cpg": {
               "get": {
-                "description": "Получить цифровой профиль клиента (ESIA)",
+                "description": "Получить цифровой профиль гражданина (ESIA)",
                 "responses": {
                   "200": {
                     "description": "Успешно получили цифровой профиль гражданина. \n\n<span style=\"color:red\">**Цифровой профиль описан не полностью, по мере потребности будем описывать**</span>",
