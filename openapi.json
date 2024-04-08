@@ -11,7 +11,7 @@
     "onUpdatedScoring": {
       "post": {
         "summary": "Нотификация изменения состояния скоринга",
-        "description": "Данная нотификация срабатывает при изменения состояния скоринга",
+        "description": "Данная нотификация срабатывает при изменения состояния скоринга\n\n **Событие опциональное**",
         "requestBody": {
           "required": true,
           "description": "Body request",
@@ -256,7 +256,14 @@
                 "description": "Получить цифровой профиль клиента (ESIA)",
                 "responses": {
                   "200": {
-                    "description": "Успешно получили цифровой профиль клиента, ***TODO: Опишем схему чуть позже***"
+                    "description": "Успешно получили цифровой профиль гражданина. \n\n<span style=\"color:red\">**Цифровой профиль описан не полностью, по мере потребности будем описывать**</span>",
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "https://raw.githubusercontent.com/VantaFinance/Esia-gateway-client/main/openapi.json#/components/schemas/CPG"
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -2895,13 +2902,33 @@
       },
       "AccountDetail": {
         "description": "Детали счета",
-        "required": ["bill", "fullName"],
+        "required": ["bill", "fullName", "bic", "corr", "inn", "beneficiaryBankName", "fullName"],
         "type": "object",
         "properties": {
           "bill": {
             "type": "string",
-            "description": "Счет клиента",
-            "examples": ["50770335000000002733"]
+            "description": "Номер счета",
+            "examples": ["50981743600000009546"]
+          },
+          "bic": {
+            "type": "string",
+            "description": "БИК",
+            "examples": ["970439611"]
+          },
+          "corr": {
+            "type": "string",
+            "description": "Корреспондентский счет",
+            "examples": ["50981743600000009546"]
+          },
+          "inn": {
+            "type": "string",
+            "description": "ИНН",
+            "examples": ["970439611"]
+          },
+          "beneficiaryBankName": {
+            "type": "string",
+            "description": "Название банка",
+            "examples": ["АО ВАНТА"]
           },
           "fullName": {
             "type": "string",
