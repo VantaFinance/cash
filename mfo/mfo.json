@@ -1,0 +1,553 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Abstract MFO",
+    "description": {
+      "$ref": "./mfo.md"
+    },
+    "version": "0.1"
+  },
+  "webhooks": {
+    "onAuthorizationLoanAgreement": {
+      "post": {
+        "tags": [
+          "События договора займа"
+        ],
+        "summary": "Событие авторизации договора займа",
+        "description": "Данное событие срабатывает при запуски бизнес процесса: `Авторизация договора займа`.",
+        "requestBody": {
+          "required": true,
+          "description": "Body request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["applicationId", "type", "message", "status"],
+                "properties": {
+                  "applicationId": {
+                    "$ref": "#/components/schemas/ApplicationId"
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "Тип события",
+                    "examples": [
+                      "AuthorizationLoanAgreement"
+                    ]
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Статус авторизации договора займа. \n- `AUTHORIZED` - Договор успешно авторизирован \n- `ERROR` - Договор не авторизирован \n- `REJECTED` - Банк отказался авторизовать договор  \n- `CANCELLED` - Клиент отказался от займа`",
+                    "enum": [
+                      "AUTHORIZED",
+                      "ERROR",
+                      "REJECTED"
+                    ]
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Сообщение об состоянии",
+                    "examples": [
+                      "Договора займа успешно авторизирован"
+                    ]
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "onAuthorizeLoanAgreementStarted": {
+      "post": {
+        "tags": [
+          "События договора займа"
+        ],
+        "summary": "Событие старта авторизации займа",
+        "description": "Данное событие срабатывает при запуски бизнес процесса: `Авторизация договора займа`.",
+        "requestBody": {
+          "required": true,
+          "description": "Body request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["applicationId", "type", "coolingFrom", "coolingTo"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "Тип события",
+                    "examples": [
+                      "AuthorizeLoanAgreementStarted"
+                    ]
+                  },
+                  "applicationId": {
+                    "$ref": "#/components/schemas/ApplicationId"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/application/{id}": {
+      "get": {
+        "tags": [
+          "Операции над заявкой"
+        ],
+        "description": "Получить заявку",
+        "summary": "Получить заявку",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ApplicationId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Получена заявка",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["id", "status"],
+                  "description": "Получена заявка",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/ApplicationId"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Статус заявки.\n\n Возможные значения: \n\n **Скоринг** \n\n- `SCORING_PENDING` - Ожидание результата скоринга\n\n- `SCORING_FAILED` - Ошибка при скоринге\n\n- `SCORING_APPROVED` - Скоринг одобрен\n\n- `SCORING_REJECTED` - Скоринг отклонён\n\n **Черновик договора** \n\n- `CONTRACT_DRAFT_PENDING` - Ожидание черновика договора\n\n- `CONTRACT_DRAFT_REJECTED` - Отказано в обслуживании\n\n- `CONTRACT_DRAFT_FAILED` - Ошибка при создании черновика\n\n- `CONTRACT_DRAFT_RECEIVED` - Черновик договора получен\n\n **Договор** \n\n- `SIGN_PENDING` - Ожидание подписания\n\n- `SIGN_FAILED` - Ошибка при подписании\n\n- `SIGN_REJECTED` - Подписание отклонено\n\n- `SIGNED` - Договор подписан\n\n **Авторизация договора** \n\n- `AUTHORIZED` - Договор авторизован\n\n- `AUTHORIZED_FAILED` - Ошибка авторизации\n\n- `AUTHORIZE_PENDING` - Ожидание авторизации\n\n- `AUTHORIZED_CANCELLED` - Авторизация отменена\n\n- `AUTHORIZED_REJECTED` - Авторизация отклонена",
+                      "enum": [
+                        "SCORING_PENDING",
+                        "SCORING_FAILED",
+                        "SCORING_APPROVED",
+                        "SCORING_REJECTED",
+                        "CONTRACT_DRAFT_PENDING",
+                        "CONTRACT_DRAFT_FAILED",
+                        "CONTRACT_DRAFT_RECEIVED",
+                        "CONTRACT_DRAFT_REJECTED",
+                        "SIGN_PENDING",
+                        "SIGN_FAILED",
+                        "SIGN_REJECTED",
+                        "SIGNED",
+                        "AUTHORIZED",
+                        "AUTHORIZED_FAILED",
+                        "AUTHORIZE_PENDING",
+                        "AUTHORIZED_CANCELLED",
+                        "AUTHORIZED_REJECTED"
+                      ]
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-agreement/{id}/details": {
+      "get": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "Получить детали договора",
+        "summary": "Получить детали договора",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ApplicationId"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Получили детали договора займа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanAgreement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-agreement/{id}/draft": {
+      "get": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "Получить черновик договора займа",
+        "summary": "Получить черновик договора займа",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ApplicationId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно получили черновик договора займа",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loan-agreement/{id}/signed": {
+      "get": {
+        "tags": [
+          "Операции над договором займа"
+        ],
+        "description": "Получить подписанный договора займа",
+        "summary": "Получить подписанный договора займа",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ApplicationId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно получили подписанный договор займа",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApplicationId": {
+        "description": "Идентификатор заявки",
+        "type": "string",
+        "examples": [
+          "00000000-0000-0000-0000-000000000000"
+        ]
+      },
+      "LoanAgreement": {
+        "type": "object",
+        "description": "Параметры договора займа",
+        "required": [
+          "agreementNumber",
+          "monthlyPayment",
+          "term",
+          "totalCost",
+          "rate"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Одобренная сумма займа <span style=\"color:red\">**копейках**</span>",
+            "examples": [
+              "500000"
+            ]
+          },
+          "agreementNumber": {
+            "type": "string",
+            "description": "Номер договора займа",
+            "examples": [
+              "DNS7023227"
+            ]
+          },
+          "monthlyPayment": {
+            "type": "string",
+            "description": "Ежемесячный платеж <span style=\"color:red\">**копейках**</span>",
+            "examples": [
+              "500000"
+            ]
+          },
+          "term": {
+            "type": "integer",
+            "description": "Срок займа в месяцах",
+            "minimum": 1
+          },
+          "totalCost": {
+            "description": "Полная стоимость займа",
+            "required": [
+              "percent",
+              "amount"
+            ],
+            "type": "object",
+            "properties": {
+              "percent": {
+                "type": "string",
+                "description": "Полная стоимость займа в процентах",
+                "format": "float",
+                "examples": [
+                  "10"
+                ]
+              },
+              "amount": {
+                "type": "string",
+                "description": "Полная стоимость займа <span style=\"color:red\">**копейках**</span>",
+                "format": "int64",
+                "examples": [
+                  "200"
+                ]
+              }
+            }
+          },
+          "rate": {
+            "type": "number",
+            "format": "double",
+            "description": "Процентная ставка по займу (годовых, в %)",
+            "minimum": 0,
+            "maximum": 100,
+            "example": 18.5
+          }
+        }
+      },
+      "ErrorResponse": {
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "examples": [
+              "https://tools.ietf.org/html/rfc2616#section-10"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "examples": [
+              "$title"
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "examples": [
+              0
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "examples": [
+              "$detail"
+            ]
+          }
+        },
+        "type": "object"
+      }
+    }
+  }
+}
