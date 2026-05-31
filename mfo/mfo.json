@@ -92,6 +92,89 @@
     }
   },
   "paths": {
+    "/api/v1/application": {
+      "post": {
+        "tags": [
+          "Операции над заявкой"
+        ],
+        "description": "Создать заявку на займ",
+        "summary": "Создать заявку на займ",
+        "requestBody": {
+          "description": "Body request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApplication"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успешно создана заявка",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "required": ["id"],
+                  "description": "Успешно создана заявка",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/ApplicationId"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Плохой запрос/Бизнес исключение",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недостаточно прав доступа",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизированны",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка приложения",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/application/{id}": {
       "get": {
         "tags": [
@@ -99,11 +182,6 @@
         ],
         "description": "Получить заявку",
         "summary": "Получить заявку",
-        "security": [
-          {
-            "apiKey": []
-          }
-        ],
         "parameters": [
           {
             "name": "id",
@@ -433,6 +511,104 @@
   },
   "components": {
     "schemas": {
+      "CreateApplication": {
+        "type": "object",
+        "required": [
+          "antifraudProviders",
+          "redirectUrls"
+        ],
+        "properties": {
+          "antifraudProviders": {
+            "type": "array",
+            "description": "Провайдеры антифрода",
+            "examples": [
+              [
+                {"provider":  "JUICY_SCORE", "sessionId":  "123"}
+              ]
+            ],
+            "items": {
+              "$ref": "#/components/schemas/AntifraudProvider"
+            }
+          },
+          "redirectUrls": {
+            "type": "array",
+            "description": "Список URL-адресов для перенаправления клиента. При достижении определенного этапа процесса МФО выполняет редирект клиента на соответствующий адрес.",
+            "examples": [
+              [
+                {"type":  "AUTHORIZE_STARTED", "url":  "https://vanta.ru?sessionId=801ada51-cc07-46cb-b700-1371abf70e02"}
+              ]
+            ],
+            "items": {
+              "$ref": "#/components/schemas/RedirectUrl"
+            }
+          }
+        }
+      },
+      "RedirectUrl": {
+        "type": "object",
+        "required": [
+          "type",
+          "url"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Тип событий, при котором необходимо выполнить перенаправление клиента: \n\n- `AUTHORIZE_STARTED` - Успешно запустилась авторизация займа \n\n- `AUTHORIZED_REJECTED` - МФО отказался в авторизации займа  \n\n-  `AUTHORIZED_CANCELLED` - Клиент отказался в авторизации займа",
+            "enum": [
+              "SUCCESS_START_AUTHORIZE"
+            ],
+            "url": {
+              "type": "string",
+              "format": "uri",
+              "description": "URL-адрес, на который необходимо перенаправить клиента."
+            }
+          }
+        }
+      },
+      "AntifraudProvider": {
+        "required": [
+          "provider"
+        ],
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/AntifraudProviderType"
+          }
+        },
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "JUICY_SCORE": "#/components/schemas/JuciScoreAntifraudProvider"
+          }
+        },
+        "type": "object"
+      },
+      "JuciScoreAntifraudProvider": {
+        "required": [
+          "type",
+          "sessionId"
+        ],
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AntifraudProvider"
+          },
+          {
+            "properties": {
+              "sessionId": {
+                "type": "string",
+                "description": "Id сессии"
+              }
+            }
+          }
+        ]
+      },
+      "AntifraudProviderType": {
+        "type": "string",
+        "description": "Типы провайдеров антифрода: \n\n- `JUICY_SCORE` - JuicyScore  \n\n",
+        "enum": [
+          "JUICY_SCORE"
+        ]
+      },
       "ApplicationId": {
         "description": "Идентификатор заявки",
         "type": "string",
@@ -448,7 +624,8 @@
           "monthlyPayment",
           "term",
           "totalCost",
-          "rate"
+          "rate",
+          "amount"
         ],
         "properties": {
           "amount": {
