@@ -209,7 +209,7 @@
                       "items": {
                         "$ref": "#/components/schemas/Offer"
                       },
-                      "description": "Список банковских предложений"
+                      "description": "Список предложений"
                     },
                     "status": {
                       "type": "string",
