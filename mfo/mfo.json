@@ -198,11 +198,18 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "required": ["id", "status"],
+                  "required": ["id", "status", "offers"],
                   "description": "Получена заявка",
                   "properties": {
                     "id": {
                       "$ref": "#/components/schemas/ApplicationId"
+                    },
+                    "offers": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Offer"
+                      },
+                      "description": "Список банковских предложений"
                     },
                     "status": {
                       "type": "string",
@@ -511,6 +518,57 @@
   },
   "components": {
     "schemas": {
+      "Offer": {
+        "required": ["id", "term", "amount", "rate", "monthlyPayment", "continueUrl"],
+        "properties": {
+          "id": {
+            "description": "Идентификатор банковского предложения",
+            "type": "string",
+            "examples": [
+              "00000000-0000-0000-0000-000000000000"
+            ]
+          },
+          "term": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "description": "Срок кредитования **в месяцах**"
+          },
+          "continueUrl": {
+            "type": "string",
+            "description": "Ссылка для продолжения оформления кредита",
+            "examples": [
+              "https://mfo.vanta.ru?offerId=00000000-0000-0000-0000-000000000000"
+            ]
+          },
+          "monthlyPayment": {
+            "type": "string",
+            "description": "Ежемесячный платеж в <span style=\"color:red\">**копейках**</span>",
+            "format": "int64",
+            "examples": [
+              "200"
+            ]
+          },
+          "amount": {
+            "type": "string",
+            "description": "Одобренная сумма в <span style=\"color:red\">**копейках**</span>",
+            "format": "int64",
+            "examples": [
+              "200"
+            ]
+          },
+          "rate": {
+            "type": "string",
+            "examples": ["16.5"],
+            "description": "Ставка по займу",
+            "format": "float"
+          }
+        },
+        "type": "object"
+      },
+
+
+
       "CreateApplication": {
         "type": "object",
         "required": [
