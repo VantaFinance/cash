@@ -89,12 +89,36 @@
                       "lastname",
                       "gender",
                       "addresses",
-                      "attributes",
                       "incomes",
                       "documents",
-                      "phones"
+                      "phones",
+                      "surveys",
+                      "antifraudProviders",
+                      "joinType"
                     ],
                     "properties": {
+                      "joinType": {
+                        "enum": [
+                          "CPG",
+                          "ALFA",
+                          "SBER",
+                          "SES"
+                        ],
+                        "type": "string",
+                        "description": "Тип идентификации:\n\n- `CPG` - Идентификация через ЕСИА\n- `ALFA` -  Идентификация через AlfaId\n- `SBER` -  Идентификация через SberId\n- `SES` -  Идентификация через простую электронную подпись"
+                      },
+                      "antifraudProviders": {
+                        "type": "array",
+                        "description": "Провайдеры антифрода",
+                        "examples": [
+                          [
+                            {"provider":  "JUICY_SCORE", "sessionId":  "123"}
+                          ]
+                        ],
+                        "items": {
+                          "$ref": "#/components/schemas/AntifraudProvider"
+                        }
+                      },
                       "firstname": {
                         "type": "string",
                         "maxLength": 255,
@@ -141,10 +165,6 @@
                         "uniqueItems": true,
                         "description": "Адреса клиента"
                       },
-                      "attributes": {
-                        "$ref": "#/components/schemas/PersonAttributes",
-                        "uniqueItems": true
-                      },
                       "incomes": {
                         "description": "Доходы клиентов",
                         "type": "array",
@@ -162,6 +182,9 @@
                           "$ref": "#/components/schemas/Document"
                         },
                         "maxItems": 13
+                      },
+                      "surveys": {
+                        "$ref": "#/components/schemas/Surveys"
                       },
                       "phones": {
                         "description": "Номера телефона клиента",
@@ -244,27 +267,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "callbacks": {
-          "OnLoadCpg": {
-            "/{bank}/{$request.requestBody.externalApplicationId}/cpg": {
-              "get": {
-                "description": "Получить цифровой профиль гражданина (ESIA)",
-                "responses": {
-                  "200": {
-                    "description": "Успешно получили цифровой профиль гражданина. \n\n<span style=\"color:red\">**Цифровой профиль описан не полностью, по мере потребности будем описывать**</span>",
-                    "content": {
-                      "application/json": {
-                        "schema": {
-                          "$ref": "https://raw.githubusercontent.com/VantaFinance/Esia-gateway-client/main/openapi.json#/components/schemas/CPG"
-                        }
-                      }
-                    }
-                  }
                 }
               }
             }
@@ -1341,625 +1343,65 @@
   },
   "components": {
     "schemas": {
+      "AntifraudProvider": {
+        "required": [
+          "provider"
+        ],
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/AntifraudProviderType"
+          }
+        },
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "JUICY_SCORE": "#/components/schemas/JuciScoreAntifraudProvider"
+          }
+        },
+        "type": "object"
+      },
+      "JuciScoreAntifraudProvider": {
+        "required": [
+          "type",
+          "sessionId"
+        ],
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AntifraudProvider"
+          },
+          {
+            "properties": {
+              "sessionId": {
+                "type": "string",
+                "description": "Id сессии"
+              }
+            }
+          }
+        ]
+      },
+      "AntifraudProviderType": {
+        "type": "string",
+        "description": "Типы провайдеров антифрода: \n\n- `JUICY_SCORE` - JuicyScore  \n\n",
+        "enum": [
+          "JUICY_SCORE"
+        ]
+      },
       "Address": {
         "required": [
           "type",
-          "qualityIndex"
+          "value"
         ],
         "properties": {
           "type": {
             "$ref": "#/components/schemas/AddressType"
           },
-          "postalCode": {
+          "value": {
             "type": "string",
-            "maxLength": 6,
+            "description": "Адрес одной строкой",
             "examples": [
-              "630117"
-            ],
-            "nullable": true,
-            "description": "Индекс"
-          },
-          "federalDistrict": {
-            "type": "string",
-            "maxLength": 20,
-            "examples": [
-              "Сибирский"
-            ],
-            "nullable": true,
-            "description": "Федеральный округ"
-          },
-          "regionIsoCode": {
-            "type": "string",
-            "maxLength": 6,
-            "examples": [
-              "RU-NVS"
-            ],
-            "nullable": true,
-            "description": "ISO-код региона"
-          },
-          "cityArea": {
-            "type": "string",
-            "maxLength": 120,
-            "examples": [
-              "Строка"
-            ],
-            "nullable": true,
-            "description": "Административный округ (только для Москвы)"
-          },
-          "squareMeterPrice": {
-            "type": "string",
-            "examples": [
-              "100000"
-            ],
-            "nullable": true,
-            "description": "Рыночная стоимость м²"
-          },
-          "flatPrice": {
-            "type": "string",
-            "examples": [
-              "100000"
-            ],
-            "nullable": true,
-            "description": "Рыночная стоимость квартиры"
-          },
-          "postalBox": {
-            "type": "string",
-            "maxLength": 50,
-            "nullable": true,
-            "description": "Абонентский ящик"
-          },
-          "geonameId": {
-            "type": "string",
-            "examples": [
-              "10"
-            ],
-            "nullable": true,
-            "description": "Идентификатор объекта в базе GeoNames. Для российских адресов не заполняется"
-          },
-          "timezone": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "UTC+3"
-            ],
-            "nullable": true,
-            "description": "Часовой пояс города для России, часовой пояс страны — для иностранных адресов. Если у страны несколько поясов, вернёт минимальный и максимальный через слеш: UTC+5/UTC+6\n"
-          },
-          "beltwayHit": {
-            "nullable": true,
-            "$ref": "#/components/schemas/BeltwayHit"
-          },
-          "beltwayDistance": {
-            "type": "string",
-            "examples": [
-              "10"
-            ],
-            "nullable": true,
-            "description": "Расстояние от кольцевой в км.\n\n Заполнено, только если beltwayHit = `OUT_MKAD` или `OUT_KAD`, иначе `null`"
-          },
-          "qcGeo": {
-            "nullable": true,
-            "$ref": "#/components/schemas/QcGeo"
-          },
-          "country": {
-            "type": "string",
-            "maxLength": 120,
-            "examples": [
-              "Россия"
-            ],
-            "nullable": true,
-            "description": "Страна"
-          },
-          "countryIsoCode": {
-            "type": "string",
-            "examples": [
-              "RU"
-            ],
-            "nullable": true,
-            "description": "ISO-код страны\n"
-          },
-          "flatFiasId": {
-            "$ref": "#/components/schemas/Uuid",
-            "nullable": true,
-            "description": "ФИАС-код квартиры"
-          },
-          "houseFiasId": {
-            "$ref": "#/components/schemas/Uuid",
-            "nullable": true,
-            "description": "ФИАС-код дома"
-          },
-          "cityDistrictFiasId": {
-            "$ref": "#/components/schemas/Uuid",
-            "nullable": true,
-            "description": "ФИАС-код города"
-          },
-          "settlementFiasId": {
-            "$ref": "#/components/schemas/Uuid",
-            "nullable": true,
-            "description": "ФИАС-код населенного пункта"
-          },
-          "areaFiasId": {
-            "$ref": "#/components/schemas/Uuid",
-            "nullable": true,
-            "description": "ФИАС-код района"
-          },
-          "regionFiasId": {
-            "$ref": "#/components/schemas/Uuid",
-            "nullable": true,
-            "description": "ФИАС-код региона"
-          },
-          "cityFiasId": {
-            "$ref": "#/components/schemas/Uuid",
-            "nullable": true,
-            "description": "ФИАС-код города"
-          },
-          "fiasId": {
-            "$ref": "#/components/schemas/Uuid",
-            "nullable": true,
-            "description": "ФИАС-код адреса (идентификатор ФИАС)"
-          },
-          "streetFiasId": {
-            "$ref": "#/components/schemas/Uuid",
-            "nullable": true,
-            "description": "ФИАС-код улицы"
-          },
-          "flat": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "5"
-            ],
-            "nullable": true,
-            "description": "Квартира"
-          },
-          "flatArea": {
-            "type": "string",
-            "maxLength": 50,
-            "nullable": true,
-            "description": "Площадь квартиры"
-          },
-          "flatType": {
-            "type": "string",
-            "maxLength": 10,
-            "examples": [
-              "кв"
-            ],
-            "nullable": true,
-            "description": "Тип квартиры (сокращенный)"
-          },
-          "flatTypeFull": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "квартира"
-            ],
-            "nullable": true,
-            "description": "Тип квартиры"
-          },
-          "blockType": {
-            "type": "string",
-            "maxLength": 10,
-            "examples": [
-              "Строка"
-            ],
-            "nullable": true,
-            "description": "Тип корпуса/строения (сокращенный)"
-          },
-          "blockTypeFull": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "Строка"
-            ],
-            "nullable": true,
-            "description": "Тип корпуса/строения"
-          },
-          "block": {
-            "type": "string",
-            "maxLength": 50,
-            "nullable": true,
-            "description": "Корпус/строение"
-          },
-          "houseType": {
-            "type": "string",
-            "maxLength": 10,
-            "examples": [
-              "д"
-            ],
-            "nullable": true,
-            "description": "Тип дома (сокращенный)"
-          },
-          "houseTypeFull": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "дом"
-            ],
-            "nullable": true,
-            "description": "Тип дома"
-          },
-          "house": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "9Б"
-            ],
-            "nullable": true,
-            "description": "Дом"
-          },
-          "settlementWithType": {
-            "type": "string",
-            "maxLength": 131,
-            "nullable": true,
-            "description": "Населенный пункт с типом"
-          },
-          "settlementType": {
-            "type": "string",
-            "maxLength": 10,
-            "examples": [
-              "Строка"
-            ],
-            "nullable": true,
-            "description": "Тип населенного пункта (сокращенный)"
-          },
-          "settlementTypeFull": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "Строка"
-            ],
-            "nullable": true,
-            "description": "Тип населенного пункта"
-          },
-          "settlement": {
-            "type": "string",
-            "maxLength": 120,
-            "nullable": true,
-            "description": "Населенный пункт"
-          },
-          "areaWithType": {
-            "type": "string",
-            "maxLength": 131,
-            "examples": [
-              "Строка"
-            ],
-            "nullable": true,
-            "description": "Район в регионе с типом"
-          },
-          "areaType": {
-            "type": "string",
-            "maxLength": 10,
-            "examples": [
-              "Строка"
-            ],
-            "nullable": true,
-            "description": "Тип района в регионе (сокращенный)"
-          },
-          "areaTypeFull": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "Строка"
-            ],
-            "nullable": true,
-            "description": "Тип района в регионе"
-          },
-          "area": {
-            "type": "string",
-            "maxLength": 120,
-            "examples": [
-              "Строка"
-            ],
-            "nullable": true,
-            "description": "Район в регионе"
-          },
-          "cityDistrictWithType": {
-            "type": "string",
-            "maxLength": 131,
-            "examples": [
-              "р-н Советский"
-            ],
-            "nullable": true,
-            "description": "Район города с типом"
-          },
-          "cityDistrictType": {
-            "type": "string",
-            "maxLength": 10,
-            "examples": [
-              "р-н"
-            ],
-            "nullable": true,
-            "description": "Тип района города (сокращенный)"
-          },
-          "cityDistrictTypeFull": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "район"
-            ],
-            "nullable": true,
-            "description": "Тип района города"
-          },
-          "cityDistrict": {
-            "type": "string",
-            "maxLength": 120,
-            "examples": [
-              "Советский"
-            ],
-            "nullable": true,
-            "description": "Район города"
-          },
-          "cityWithType": {
-            "type": "string",
-            "maxLength": 131,
-            "examples": [
-              "г Новосибирск"
-            ],
-            "nullable": true,
-            "description": "Город с типом"
-          },
-          "cityType": {
-            "type": "string",
-            "maxLength": 10,
-            "examples": [
-              "г"
-            ],
-            "nullable": true,
-            "description": "Тип города (сокращенный)"
-          },
-          "cityTypeFull": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "город"
-            ],
-            "nullable": true,
-            "description": "Тип города"
-          },
-          "city": {
-            "type": "string",
-            "maxLength": 120,
-            "examples": [
-              "Новосибирск"
-            ],
-            "nullable": true,
-            "description": "Город"
-          },
-          "streetType": {
-            "type": "string",
-            "maxLength": 10,
-            "examples": [
-              "ул"
-            ],
-            "nullable": true,
-            "description": "Тип улицы (сокращенный)"
-          },
-          "streetTypeFull": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "улица"
-            ],
-            "nullable": true,
-            "description": "Тип улицы"
-          },
-          "street": {
-            "type": "string",
-            "maxLength": 120,
-            "examples": [
-              "Арбузова"
-            ],
-            "nullable": true,
-            "description": "Улица"
-          },
-          "streetWithType": {
-            "type": "string",
-            "maxLength": 131,
-            "examples": [
-              "ул Арбузова"
-            ],
-            "nullable": true,
-            "description": "Улица с типом"
-          },
-          "regionType": {
-            "type": "string",
-            "maxLength": 10,
-            "examples": [
-              "обл"
-            ],
-            "nullable": true,
-            "description": "Тип региона (сокращенный)"
-          },
-          "regionTypeFull": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "область"
-            ],
-            "nullable": true,
-            "description": "Тип региона"
-          },
-          "region": {
-            "type": "string",
-            "maxLength": 120,
-            "examples": [
-              "Новосибирская"
-            ],
-            "nullable": true,
-            "description": "Регион"
-          },
-          "regionWithType": {
-            "type": "string",
-            "maxLength": 131,
-            "examples": [
-              "Новосибирская обл"
-            ],
-            "nullable": true,
-            "description": "Регион с типом"
-          },
-          "taxOfficeLegal": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "5473"
-            ],
-            "nullable": true,
-            "description": "Код ИФНС для организаций"
-          },
-          "taxOffice": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "5473"
-            ],
-            "nullable": true,
-            "description": "Код ИФНС для физических лиц"
-          },
-          "okato": {
-            "type": "string",
-            "maxLength": 11,
-            "examples": [
-              "50401384000"
-            ],
-            "nullable": true,
-            "description": "Код ОКАТО"
-          },
-          "oktmo": {
-            "type": "string",
-            "maxLength": 11,
-            "examples": [
-              "50401384000"
-            ],
-            "nullable": true,
-            "description": "Код ОКТМО"
-          },
-          "regionKladrId": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "5400000000000"
-            ],
-            "nullable": true,
-            "description": "КЛАДР-код региона"
-          },
-          "houseKladrId": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "5400000100000490004"
-            ],
-            "nullable": true,
-            "description": "КЛАДР-код дома"
-          },
-          "streetKladrId": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "54000001000004900"
-            ],
-            "nullable": true,
-            "description": "КЛАДР-код улицы"
-          },
-          "cityKladrId": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "5400000100000"
-            ],
-            "nullable": true,
-            "description": "КЛАДР-код города"
-          },
-          "settlementKladrId": {
-            "type": "string",
-            "examples": [
-              "10"
-            ],
-            "nullable": true,
-            "description": "КЛАДР-код населенного пункта"
-          },
-          "areaKladrId": {
-            "type": "string",
-            "examples": [
-              "10"
-            ],
-            "nullable": true,
-            "description": "КЛАДР-код района"
-          },
-          "cityDistrictKladrId": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "10"
-            ],
-            "nullable": true,
-            "description": "КЛАДР-код района города (не заполняется)"
-          },
-          "kladrId": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "5400000100000490004"
-            ],
-            "nullable": true,
-            "description": "КЛАДР-код адреса"
-          },
-          "capitalMarker": {
-            "nullable": true,
-            "$ref": "#/components/schemas/CapitalMarker"
-          },
-          "fiasCode": {
-            "type": "string",
-            "maxLength": 50,
-            "examples": [
-              "54000001000000000490004"
-            ],
-            "nullable": true,
-            "description": "Не заполняется, используйте fiasId",
-            "deprecated": true
-          },
-          "fiasLevel": {
-            "nullable": true,
-            "$ref": "#/components/schemas/FiasLevel"
-          },
-          "fiasActualityState": {
-            "type": "string",
-            "examples": [
-              "49"
-            ],
-            "nullable": true,
-            "description": "Признак актуальности адреса в ФИАС: \n\n `0` - Актуальный \n\n `1-50` - Переименован \n\n  `51` - Переподчинен \n\n `99` - Удален"
-          },
-          "geoLat": {
-            "type": "string",
-            "maxLength": 12,
-            "examples": [
-              "54.8709575"
-            ],
-            "nullable": true,
-            "description": "Координаты широты"
-          },
-          "geoLon": {
-            "type": "string",
-            "maxLength": 12,
-            "examples": [
-              "83.1034345"
-            ],
-            "nullable": true,
-            "description": "Координаты долготы"
-          },
-          "metro": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Metro"
-            },
-            "maxItems": 3,
-            "description": "Список ближайших станций метро (до трёх штук)"
-          },
-          "historyValues": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+              "г Москва, Красногвардейский б-р, д 1, кв 1"
+            ]
           }
         },
         "type": "object"
@@ -1975,91 +1417,12 @@
         ]
       },
       "Gender": {
-        "description": "Гендеры:\n\n- `men` - мужчина\n- `women` - женщина",
+        "description": "Гендеры:\n\n- `MEN` - мужчина\n- `WOMEN` - женщина",
         "type": "string",
         "enum": [
-          "men",
-          "women"
+          "MEN",
+          "WOMEN"
         ]
-      },
-      "BeltwayHit": {
-        "type": "string",
-        "description": "Внутри кольцевой:\n\n- `IN_MKAD` - внутри МКАД (Москва)\n- `OUT_MKAD` - за МКАД (Москва и область)\n- `IN_KAD` - внутри КАД (Санкт-Петербург)\n- `OUT_KAD` - за КАД (Санкт-Петербург и область)\n- `null` - в остальных случаях",
-        "enum": [
-          "IN_MKAD",
-          "OUT_MKAD",
-          "IN_KAD",
-          "OUT_KAD"
-        ]
-      },
-      "QcGeo": {
-        "type": "string",
-        "description": "Код точности координат:\n\n- `0` - точные координаты\n- `1` - ближайший дом\n- `2` - улица\n- `3` - населенный пункт\n- `4` - город\n- `5` - координаты не определены",
-        "enum": [
-          "0",
-          "1",
-          "2",
-          "3",
-          "4",
-          "5"
-        ]
-      },
-      "CapitalMarker": {
-        "type": "string",
-        "description": "Признак центра района или региона:\n\n- `0` - Ничего из перечисленного (Московская обл, г Балашиха)\n- `1` - Центр района (Московская обл, Одинцовский р-н, г Одинцово)\n- `2` - Центр региона (Новосибирская обл, г Новосибирск)\n- `3` - Центр района и региона (Томская обл, г Томск)\n- `4` - Центральный район региона (Тюменская обл, Тюменский р-н)",
-        "enum": [
-          "0",
-          "1",
-          "2",
-          "3",
-          "4"
-        ]
-      },
-      "FiasLevel": {
-        "type": "string",
-        "description": "Уровень детализации, до которого адрес найден в ФИАС:\n\n- `0` - страна\n- `1` - регион\n- `3` - район\n- `3` - район\n- `4` - город\n- `5` - район города\n- `6` - населенный пункт\n- `7` - улица\n- `8` - дом\n- `9` - квартира\n- `65` - планировочная структура\n- `90` - доп. территория\n- `91` - улица в доп. территории\n- `-1` - иностранный или пустой",
-        "enum": [
-          "0",
-          "1",
-          "3",
-          "4",
-          "5",
-          "6",
-          "7",
-          "8",
-          "9",
-          "65",
-          "75",
-          "-1"
-        ]
-      },
-      "Metro": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "maxLength": 255,
-            "examples": [
-              "Бабушкинская"
-            ],
-            "description": "Название станции"
-          },
-          "line": {
-            "type": "string",
-            "maxLength": 255,
-            "examples": [
-              "Калужско-Рижская"
-            ],
-            "description": "Название линии"
-          },
-          "distance": {
-            "type": "string",
-            "examples": [
-              "10000"
-            ],
-            "description": "Расстояние до станции в километрах"
-          }
-        },
-        "type": "object"
       },
       "Date": {
         "title": "Дата",
@@ -2070,28 +1433,78 @@
           "13.05.2005"
         ]
       },
-      "PersonAttribute": {
-        "type": "string",
-        "description": "Атрибуты клиента:\n\n- `OWNER_FLAT` - владелец квартиры\n- `OWNER_VILLA` - владелец виллы\n- `INCOME_FROM_SALARY` - имеет доход от зарплаты\n- `INCOME_FROM_PENSION` - имеет доход от пенсии\n- `INCOME_FROM_RENT` - имеет доход от аренды\n- `NO_RESIDENT_USA` - не является резидентом Соединенных Шатов Америки\n- `ADDRESSES_EQUAL` - адрес регистрации совпадает с адресом проживания\n- `PENSIONER` - является пенсионером\n- `PUBLIC_OFFICIAL` - является публичным должностным лицом\n- `RELATIVE_PUBLIC_OFFICIAL` - является родственником публичного должностного лица",
-        "enum": [
-          "OWNER_FLAT",
-          "OWNER_VILLA",
-          "INCOME_FROM_SALARY",
-          "INCOME_FROM_PENSION",
-          "INCOME_FROM_RENT",
-          "ADDRESSES_EQUAL",
-          "NO_RESIDENT_USA",
-          "PENSIONER",
-          "PUBLIC_OFFICIAL",
-          "RELATIVE_PUBLIC_OFFICIAL"
-        ]
-      },
-      "PersonAttributes": {
-        "type": "array",
-        "items": {
-          "$ref": "#/components/schemas/PersonAttribute"
-        },
-        "description": "Атрибуты клиента:\n\n- `OWNER_FLAT` - владелец квартиры\n- `OWNER_VILLA` - владелец виллы\n- `INCOME_FROM_SALARY` - имеет доход от зарплаты\n- `INCOME_FROM_PENSION` - имеет доход от пенсии\n- `INCOME_FROM_RENT` - имеет доход от аренды\n- `NO_RESIDENT_USA` - не является резидентом Соединенных Шатов Америки\n- `ADDRESSES_EQUAL` - адрес регистрации совпадает с адресом проживания\n- `PENSIONER` - является пенсионером\n- `PUBLIC_OFFICIAL` - является публичным должностным лицом\n- `RELATIVE_PUBLIC_OFFICIAL` - является родственником публичного должностного лица"
+      "Surveys": {
+        "type": "object",
+        "description": "Опросы клиента",
+        "required": [
+          "digitalSignature",
+          "personalDataProcessing",
+          "dataSharing",
+          "creditHistory",
+          "pensionFundRequest",
+          "partnerDataRetrieval",
+          "marketingInfo",
+          "beneficialOwner",
+          "publicOfficial",
+          "hasPensionStatus",
+          "taxResidencies"
+        ],
+        "properties": {
+          "taxResidencies": {
+            "description": "Страны налогового резидентства клиента в формате ISO 3166-1 alpha-2.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "examples": [["RU", "US"]]
+          },
+          "hasPensionStatus": {
+            "type": "boolean",
+            "description": "Имею статус пенсионера."
+          },
+          "digitalSignature": {
+            "type": "boolean",
+            "description": "Даю согласие на использование простой электронной подписи."
+          },
+          "personalDataProcessing": {
+            "type": "boolean",
+            "description": "Даю согласие на обработку своих персональных данных в том числе биометрических."
+          },
+          "dataSharing": {
+            "type": "boolean",
+            "description": "Даю согласие Финансовым организациям и Партнерам на получение и обработку моих персональных данных."
+          },
+          "creditHistory": {
+            "type": "boolean",
+            "description": "Даю согласие Финансовым организациям на запрос моей кредитной истории."
+          },
+          "pensionFundRequest": {
+            "type": "boolean",
+            "description": "Даю согласие Финансовым организациям на запрос сведений в ПФР."
+          },
+          "partnerDataRetrieval": {
+            "type": "boolean",
+            "description": "Даю согласие на получение моих персональных данных от Партнеров и Финансовых организаций."
+          },
+          "marketingInfo": {
+            "type": "boolean",
+            "description": "Даю согласие на получение информационных сообщений и информации о маркетинговых мероприятиях."
+          },
+          "beneficialOwner": {
+            "type": "boolean",
+            "description": "Подтверждаю что действую в собственных интересах (являюсь бенефициарным владельцем)."
+          },
+          "publicOfficial": {
+            "type": "string",
+            "title": "Публичное лицо",
+            "description": "Являюсь ли я какого либо рода публичным должностным лицом, его родственником или нахожусь в деловых отношениях с ним. \n\n - NOT_PUBLIC - Не являюсь публичным должностным лицом, а также его супругом или родственником и не имею близких деловых отношений с ним. \n - RUSSIAN - Являюсь российским публичным должностным лицом, или его супругом или родственником или имею близкие деловые отношения с ним. \n - FOREIGN - Являюсь иностранным или международным публичным должностным лицом, или его супругом или родственником или имею близкие деловые отношения с ним.",
+            "enum": [
+              "NOT_PUBLIC",
+              "RUSSIAN",
+              "FOREIGN"
+            ]
+          }
+        }
       },
       "Income": {
         "required": [
@@ -2519,47 +1932,17 @@
       "Work": {
         "description": "Место работы",
         "required": [
-          "form",
           "name",
-          "industry",
           "taxNumber",
-          "attribute",
-          "employmentType",
-          "experienceInCompany",
-          "experienceInPosition"
+          "phones",
+          "addresses"
         ],
         "properties": {
-          "industry": {
-            "$ref": "#/components/schemas/Industry"
-          },
-          "experienceInCompany": {
-            "$ref": "#/components/schemas/Level"
-          },
-          "experienceInPosition": {
-            "$ref": "#/components/schemas/Level"
-          },
-          "employmentType": {
-            "$ref": "#/components/schemas/WorkStatus"
-          },
-          "position": {
-            "nullable": true,
-            "$ref": "#/components/schemas/Position"
-          },
           "positionName": {
-            "type": "string",
+            "type": ["string", "null"],
             "maxLength": 255,
             "minLength": 2,
-            "nullable": true,
             "description": "Название должности"
-          },
-          "form": {
-            "type": "string",
-            "maxLength": 5,
-            "minLength": 5,
-            "examples": [
-              "12345"
-            ],
-            "description": "Организационная правовая форма"
           },
           "name": {
             "type": "string",
@@ -2570,23 +1953,28 @@
           "taxNumber": {
             "$ref": "#/components/schemas/TaxNumberUnion"
           },
-          "attribute": {
-            "$ref": "#/components/schemas/WorkAttributes"
+          "addresses": {
+            "type": "array",
+            "description": "Адреса работодателя",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              ["г Москва, ул Авиамоторная, д 10 к 2"]
+            ]
+          },
+          "phones": {
+            "type": "array",
+            "description": "Номера телефона работодателя",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              ["+79175848148"]
+            ]
           }
         },
         "type": "object"
-      },
-      "Position": {
-        "type": "string",
-        "description": "Занимаемая позиция:\n\n- `WORKER` - рабочий\n- `MANAGER` - руководитель\n- `GENERAL_MANAGER` - генеральный директор\n- `SPECIALIST` - специалист\n- `SERVICE_STAFF` - обслуживающий персонал\n- `FOUNDER` - учредитель",
-        "enum": [
-          "WORKER",
-          "FOUNDER",
-          "MANAGER",
-          "SPECIALIST",
-          "SERVICE_STAFF",
-          "GENERAL_MANAGER"
-        ]
       },
       "TaxNumberUnion": {
         "type": "string",
@@ -2594,84 +1982,6 @@
         "description": "Налоговый номер индивидуального предпринимателя или физического лица",
         "examples": [
           "752276213667"
-        ]
-      },
-      "Industry": {
-        "description": "Сфера деятельности:\n\n- `FEC` - ТЭК\n- `OTHER` - Иное\n- `TOURISM` - Туризм\n- `CATERING` - Общественное питание, в том числе предпр. быстрого\n- `PUBLISHING` - Издательская деятельность\n- `RESTAURANTS` - Рестораны\n- `RETAIL_TRADE` - Розничная торговля\n- `AGRICULTURE` - Сельское хозяйство\n- `SHOW_BUSINESS` - Шоу бизнес\n- `PUBLIC_HEALTH` - Здравоохранение государственное\n- `PRIVATE_HEALTH` - Здравоохранение коммерческое\n- `LAW_ENFORCEMENT` - Правоохранительные органы, таможня\n- `WHOLESALE_TRADE` -  Торговля оптовая\n- `FINANCE_BANKING` - Банкинг\n- `PUBLIC_EDUCATION` - Государственное образование\n- `PRIVATE_EDUCATION` -  Коммерческое образование\n- `SCIENCE_AND_CULTURE` - Наука и культура\n- `BOROCHNYE_PRODUCTION` - Cборочные производства (в т.ч. сборка мебели)\n- `MILITARY_ESTABLISHMENT` - Вооруженные силы\n- `LIGHT_AND_FOOD_INDUSTRY` - Легкая и пищевая промышленность\n- `BEAUTY_AND_HEALTH_SALONS` - Салоны красоты и здоровья\n- `LEGAL_AND_NOTARIAL_SERVICES` - Юридические и нотариальны услуги\n- `TRANSPORT_AND_COMMUNICATIONS` - Транспорт и связь\n- `ADVERTISING_PR_AGENCIES_MEDIA` - Реклама, PR агенства, СМИ\n- `FEDERAL_AND_MUNICIPAL_CONTROL` - Федеральный и муниципальный управление\n- `EXTRACTIVE_INDUSTRY_EXEPECT_FEC` - Доб.промышленность(кроме ТЭК)\n- `UTILITIES_SERVICES_ROAD_SERVICES` - Коммун.хоз/Сфера услуг/Дорожные Службы\n- `INFORMATICS_AND_TELECOMMUNICATIONS` - Информатика и телекоммуникации\n- `PRIVATE_DETECTIVE_SECURITY_COMPANY` -  Частный детектив/Охранное предприятие\n- `CHEMISTRY_PERFUMERY_PHARMACEUTICALS` - Химия/Парфюмерия/Фармацевтика\n- `MECHANICAL_ENGINEERING_AND_METALWORKING` - Машиностроение и металлообработка\n- `CONSTRUCTION_PRODUCTION_OF_BUILDING_MATERIALS` - Строительство, производство стройматериалов",
-        "type": "string",
-        "enum": [
-          "MILITARY_ESTABLISHMENT",
-          "EXTRACTIVE_INDUSTRY_EXEPECT_FEC",
-          "PUBLIC_HEALTH",
-          "PRIVATE_HEALTH",
-          "PUBLISHING",
-          "INFORMATICS_AND_TELECOMMUNICATIONS",
-          "UTILITIES_SERVICES_ROAD_SERVICES",
-          "LIGHT_AND_FOOD_INDUSTRY",
-          "MECHANICAL_ENGINEERING_AND_METALWORKING",
-          "SCIENCE_AND_CULTURE",
-          "PUBLIC_EDUCATION",
-          "PRIVATE_EDUCATION",
-          "CATERING",
-          "LAW_ENFORCEMENT",
-          "ADVERTISING_PR_AGENCIES_MEDIA",
-          "RESTAURANTS",
-          "BEAUTY_AND_HEALTH_SALONS",
-          "BOROCHNYE_PRODUCTION",
-          "AGRICULTURE",
-          "CONSTRUCTION_PRODUCTION_OF_BUILDING_MATERIALS",
-          "WHOLESALE_TRADE",
-          "RETAIL_TRADE",
-          "TRANSPORT_AND_COMMUNICATIONS",
-          "TOURISM",
-          "FEC",
-          "SHOW_BUSINESS",
-          "FEDERAL_AND_MUNICIPAL_CONTROL",
-          "FINANCE_BANKING",
-          "CHEMISTRY_PERFUMERY_PHARMACEUTICALS",
-          "PRIVATE_DETECTIVE_SECURITY_COMPANY",
-          "LEGAL_AND_NOTARIAL_SERVICES",
-          "OTHER"
-        ]
-      },
-      "WorkAttributes": {
-        "type": "array",
-        "description": "Аттрибуты работы: \n\n `TYPE_COMMERCIAL` - Коммерческая организация \n\n `TYPE_NON_COMMERCIAL` - Некоммерческая организация \n\n  `STATE_OWNED` - Государственная организация \n\n `STATE_NON_OWNED` - Не государственная организация \n\n `FOREIGN_CAPITAL` - Имеет иностранный капитал \n\n `FOREIGN_NON_CAPITAL` - Не имеет иностранный капитал",
-        "items": {
-          "$ref": "#/components/schemas/WorkAttribute"
-        },
-        "uniqueItems": true
-      },
-      "WorkAttribute": {
-        "type": "string",
-        "description": "Аттрибуты работы:\n\n- `TYPE_COMMERCIAL` - коммерческая организация\n- `TYPE_NON_COMMERCIAL` - некоммерческая организация\n- `STATE_OWNED` - государственная организация\n- `STATE_NON_OWNED` - не государственная организация\n- `FOREIGN_CAPITAL` - имеет иностранный капитал\n- `FOREIGN_NON_CAPITAL` - не имеет иностранного капитала",
-        "enum": [
-          "TYPE_COMMERCIAL",
-          "TYPE_NON_COMMERCIAL",
-          "STATE_OWNED",
-          "STATE_NON_OWNED",
-          "FOREIGN_CAPITAL",
-          "FOREIGN_NON_CAPITAL"
-        ]
-      },
-      "WorkStatus": {
-        "type": "string",
-        "description": "Статус занятости:\n\n- `WORKING` - работающий\n- `WORKING_FOR_HIRE` - работает по найму\n- `WORKING_FOR_MYSELF` - самозанятый",
-        "enum": [
-          "WORKING",
-          "WORKING_FOR_HIRE",
-          "WORKING_FOR_MYSELF"
-        ]
-      },
-      "Level": {
-        "type": "string",
-        "description": "Промежутки времени:\n\n- `LOW` - 6 месяцев и меньше\n- `MEDIUM` - 0.7 - 3 года\n- `HIGH` - 3-5 лет\n- `VERY_HIGH` - 5-7 лет\n- `EXTREME` - 7 лет и более",
-        "enum": [
-          "LOW",
-          "MEDIUM",
-          "HIGH",
-          "VERY_HIGH",
-          "EXTREME"
         ]
       },
       "Phone": {
@@ -2695,7 +2005,7 @@
       },
       "PhoneType": {
         "type": "string",
-        "description": "Типы номеров:\n\n- `WORK` - рабочий\n- `HOME` - домашний\n- `CONTACT_PERSON` - контактного лица\n- `SECOND_CONTACT_PERSON` - второго контактного лица\n - `ESIA` - номер, указанный в Госуслугах/ЕСИА",
+        "description": "Типы номеров:\n\n- `WORK` - рабочий\n- `HOME` - домашний\n- `CONTACT_PERSON` - контактного лица\n- `SECOND_CONTACT_PERSON` - второго контактного лица\n - `ESIA` - номер, указанный в Госуслугах/ЕСИА\n - `PERSONAL` - личный номер клиента",
         "enum": [
           "WORK",
           "HOME",
@@ -2838,7 +2148,7 @@
         "type": "object"
       },
       "Offer": {
-        "required": ["id", "term", "maxAmount", "minAmount", "rate", "services"],
+        "required": ["id", "term", "amount", "rate"],
         "properties": {
           "id": {
             "description": "Идентификатор банковского предложения",
@@ -2850,55 +2160,20 @@
             "minimum": 1,
             "description": "Срок кредитования **в месяцах**"
           },
-          "maxAmount": {
+          "amount": {
             "type": "string",
-            "description": "Максимальный доступный кредитный лимит в <span style=\"color:red\">**копейках**</span>",
+            "description": "Одобренная сумма кредита в <span style=\"color:red\">**копейках**</span>",
             "format": "int64",
             "examples": ["200"]
-          },
-          "minAmount": {
-            "type": "string",
-            "description": "Минимальный доступный кредитный лимит в <span style=\"color:red\">**копейках**</span>",
-            "format": "int64",
-            "examples": ["100"]
           },
           "rate": {
             "type": "string",
             "examples": ["16.5"],
             "description": "Ставка по займу",
             "format": "float"
-          },
-          "services": {
-            "type": "array",
-            "description": "Дополнительные услуги",
-            "items": {
-              "$ref": "#/components/schemas/Service"
-            }
           }
         },
         "type": "object"
-      },
-      "Service": {
-        "required": ["id", "name", "amount"],
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref":  "#/components/schemas/Uuid",
-            "description": "Идентификатор дополнительной услуги"
-          },
-          "name": {
-            "type": "string",
-            "description": "Название дополнительной услуги",
-            "minLength": 3,
-            "maxLength": 255
-          },
-          "amount": {
-            "type": "string",
-            "examples": ["100"],
-            "format": "int64",
-            "description": "Стоимость дополнительной услуги в <span style=\"color:red\">**копейках**</span>"
-          }
-        }
       },
       "AccountDetail": {
         "description": "Детали счета",

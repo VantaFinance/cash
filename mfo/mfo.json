@@ -566,9 +566,6 @@
         },
         "type": "object"
       },
-
-
-
       "CreateApplication": {
         "type": "object",
         "required": [

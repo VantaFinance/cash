@@ -23,7 +23,6 @@ end
 Cash Bus->>+ Bank : Создает заявку /api/v1/application
 alt Если заявка соотвествует доменным правилам
     Bank->>Cash Bus: Возвращаем Идентификатор заявки
-    Bank->>Cash Bus: Выгружаем ЦПГ(ESIA) /{bank}/{$request.requestBody.externalApplicationId}/cpg
 else Если с заявкой что-то не так
     rect rgb(210, 46,46)
         Bank->>-Cash Bus: Возвращаем ошибку 
