@@ -11,7 +11,7 @@
     "onUpdatedScoring": {
       "post": {
         "summary": "Нотификация изменения состояния скоринга",
-        "description": "Данная нотификация срабатывает при изменения состояния скоринга\n\n **Событие опциональное**",
+        "description": "Данная нотификация срабатывает при изменения состояния скоринга",
         "requestBody": {
           "required": true,
           "description": "Body request",
@@ -20,12 +20,167 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "externalApplicationId"
+                  "externalApplicationId",
+                  "type"
                 ],
                 "properties": {
+                  "type": {
+                    "description": "Тип нотификации",
+                    "type": "string",
+                    "examples": [
+                      "UpdatedScoringNotification"
+                    ]
+                  },
                   "externalApplicationId": {
                     "description": "Идентификатор заявки внешней системы",
                     "$ref": "#/components/schemas/Uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Запрос принят"
+          }
+        }
+      }
+    },
+    "onUpdatedDraftStatus": {
+      "post": {
+        "summary": "Нотификация изменения статуса печати договора займа",
+        "description": "Данная нотификация срабатывает при изменении статуса печати договора займа",
+        "requestBody": {
+          "required": true,
+          "description": "Body request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "status",
+                  "description"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Идентификатор черновика займа"
+                  },
+                  "type": {
+                    "description": "Тип нотификации",
+                    "type": "string",
+                    "examples": [
+                      "DraftPrintStatusUpdatedNotification"
+                    ]
+                  },
+                  "status": {
+                    "$ref": "#/components/schemas/DraftPrintStatus"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Дополнительная информация",
+                    "maxLength": 300
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Запрос принят"
+          }
+        }
+      }
+    },
+    "onUpdatedLoanAgreementStatus": {
+      "post": {
+        "summary": "Нотификация изменения статуса договора",
+        "description": "Данная нотификация срабатывает при изменении статуса авторизации договора",
+        "requestBody": {
+          "required": true,
+          "description": "Body request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "status",
+                  "description"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/Uuid",
+                    "description": "Идентификатор договора займ"
+                  },
+                  "type": {
+                    "description": "Тип нотификации",
+                    "type": "string",
+                    "examples": [
+                      "LoanAgreementStatusUpdatedNotification"
+                    ]
+                  },
+                  "status": {
+                    "$ref": "#/components/schemas/LoanAgreementStatus"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": "300",
+                    "description": "Дополнительная информация"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Запрос принят"
+          }
+        }
+      }
+    },
+    "onUpdatedFinancingStatus": {
+      "post": {
+        "summary": "Нотификация изменения статуса финансирования",
+        "description": "Данная нотификация срабатывает при изменении статуса финансирования",
+        "requestBody": {
+          "required": true,
+          "description": "Body request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "status",
+                  "description"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/Uuid",
+                    "description": "Идентификатор авторизированного договора"
+                  },
+                  "type": {
+                    "description": "Тип нотификации",
+                    "type": "string",
+                    "examples": [
+                      "FinancingStatusUpdatedNotification"
+                    ]
+                  },
+                  "status": {
+                    "$ref": "#/components/schemas/FinancingStatus"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": "300",
+                    "description": "Дополнительная информация"
                   }
                 }
               }
@@ -509,14 +664,8 @@
                       "description": "Дополнительная информация",
                       "maxLength": 300
                     },
-                    "status":{
-                      "type": "string",
-                      "description": "Статус печати. \n\n Возможные значения: \n\n- `WAITING` - В процессе печати договора \n\n- `SUCCESS` - Договор успешно 'распечатан' \n\n- `ERROR` - Договор не удалось 'распечатать'",
-                      "enum": [
-                        "WAITING",
-                        "SUCCESS",
-                        "ERROR"
-                      ]
+                    "status": {
+                      "$ref": "#/components/schemas/DraftPrintStatus"
                     }
                   },
                   "type": "object"
@@ -919,7 +1068,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "required": ["id", "term" ,"agreementNumber", "accountDetail", "repaymentDetail", "monthlyPayment" ,"term"],
+                  "required": ["id", "term" ,"agreementNumber", "accountDetail", "repaymentDetail", "monthlyPayment" ,"term", "totalCost"],
                   "type": "object",
                   "properties": {
                     "id": {
@@ -945,6 +1094,32 @@
                     "monthlyPayment": {
                       "description": "Сумма платежа в месяц",
                       "$ref": "#/components/schemas/Amount"
+                    },
+                    "totalCost": {
+                      "description": "Полная стоимость займа",
+                      "required": [
+                        "percent",
+                        "amount"
+                      ],
+                      "type": "object",
+                      "properties": {
+                        "percent": {
+                          "type": "string",
+                          "description": "Полная стоимость займа в процентах",
+                          "format": "float",
+                          "examples": [
+                            "10"
+                          ]
+                        },
+                        "amount": {
+                          "type": "string",
+                          "description": "Полная стоимость займа <span style=\"color:red\">**копейках**</span>",
+                          "format": "int64",
+                          "examples": [
+                            "200"
+                          ]
+                        }
+                      }
                     },
                     "accountDetail": {
                       "description": "Детали счета клиента",
@@ -1041,14 +1216,7 @@
                       "description": "Идентификатор договора займ"
                     },
                     "status": {
-                      "type": "string",
-                      "description": "Статус договора. \n\n Возможные значения: \n\n- `WAITING` - В процессе авторизации договора \n\n- `SUCCESS` - Договор успешно авторизирован \n\n- `ERROR` - Договор не удалось авторизовать \n\n- `ERROR` - Договор не удалось авторизовать",
-                      "enum": [
-                        "WAITING",
-                        "SUCCESS",
-                        "ERROR",
-                        "REJECTED"
-                      ]
+                      "$ref": "#/components/schemas/LoanAgreementStatus"
                     },
                     "description": {
                       "type": "string",
@@ -1272,13 +1440,7 @@
                       "description": "Идентификатор авторизированного договора"
                     },
                     "status": {
-                      "type": "string",
-                      "description": "Статус финансирования. \n\n Возможные значения: \n\n- `WAITING` - В процессе перевода денежных средств \n\n- `SUCCESS` - Успешно переведены денежные средства \n\n- `ERROR` - Денежные средства не удалось перевести",
-                      "enum": [
-                        "WAITING",
-                        "SUCCESS",
-                        "ERROR"
-                      ]
+                      "$ref": "#/components/schemas/FinancingStatus"
                     },
                     "description": {
                       "type": "string",
@@ -1343,6 +1505,36 @@
   },
   "components": {
     "schemas": {
+      "DraftPrintStatus": {
+        "type": "string",
+        "description": "Статус печати. \n\n Возможные значения: \n\n- `WAITING` - В процессе печати договора \n\n- `SUCCESS` - Договор успешно 'распечатан' \n\n- `ERROR` - Договор не удалось 'распечатать'",
+        "enum": [
+          "WAITING",
+          "SUCCESS",
+          "ERROR"
+        ]
+      },
+      "LoanAgreementStatus": {
+        "type": "string",
+        "description": "Статус договора. \n\n Возможные значения: \n\n- `WAITING` - В процессе авторизации договора \n\n- `SUCCESS` - Договор успешно авторизирован \n\n- `ERROR` - Договор не удалось авторизовать \n\n- `REJECTED` - Отказано в авторизации договора\n\n- `CANCELED` - Клиент отказался от авторизации договора",
+        "enum": [
+          "WAITING",
+          "SUCCESS",
+          "ERROR",
+          "REJECTED",
+          "CANCELED"
+        ]
+      },
+      "FinancingStatus": {
+        "type": "string",
+        "description": "Статус финансирования. \n\n Возможные значения: \n\n- `WAITING` - В процессе перевода денежных средств \n\n- `SUCCESS` - Успешно переведены денежные средства \n\n- `ERROR` - Денежные средства не удалось перевести \n\n- `REJECTED` - Отказано в переводе денежных средств",
+        "enum": [
+          "WAITING",
+          "SUCCESS",
+          "ERROR",
+          "REJECTED"
+        ]
+      },
       "AntifraudProvider": {
         "required": [
           "provider"
@@ -1408,12 +1600,11 @@
       },
       "AddressType": {
         "type": "string",
-        "description": "Типы адресов:\n\n- `WORK` - адрес работы\n- `FACTUAL` - фактический адрес проживания\n- `REGISTER` - адрес регистрации\n- `FLAT_FOR_DEPOSIT` - имущество имеющееся",
+        "description": "Типы адресов:\n\n- `WORK` - адрес работы\n- `FACTUAL` - фактический адрес проживания\n- `REGISTER` - адрес регистрации",
         "enum": [
           "REGISTER",
           "FACTUAL",
-          "WORK",
-          "FLAT_FOR_DEPOSIT"
+          "WORK"
         ]
       },
       "Gender": {
