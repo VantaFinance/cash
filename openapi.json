@@ -12,6 +12,9 @@
       "post": {
         "summary": "Нотификация изменения состояния скоринга",
         "description": "Данная нотификация срабатывает при изменения состояния скоринга",
+        "tags": [
+          "События скоринга заявки"
+        ],
         "requestBody": {
           "required": true,
           "description": "Body request",
@@ -20,7 +23,7 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "externalApplicationId",
+                  "applicationId",
                   "type"
                 ],
                 "properties": {
@@ -31,8 +34,8 @@
                       "UpdatedScoringNotification"
                     ]
                   },
-                  "externalApplicationId": {
-                    "description": "Идентификатор заявки внешней системы",
+                  "applicationId": {
+                    "description": "Идентификатор заявки",
                     "$ref": "#/components/schemas/Uuid"
                   }
                 }
@@ -50,6 +53,9 @@
     "onUpdatedDraftStatus": {
       "post": {
         "summary": "Нотификация изменения статуса печати договора займа",
+        "tags": [
+          "События договора займа"
+        ],
         "description": "Данная нотификация срабатывает при изменении статуса печати договора займа",
         "requestBody": {
           "required": true,
@@ -66,8 +72,8 @@
                 ],
                 "properties": {
                   "id": {
-                    "type": "string",
-                    "description": "Идентификатор черновика займа"
+                    "$ref": "#/components/schemas/Uuid",
+                    "description": "Идентификатор черновика договора займа"
                   },
                   "type": {
                     "description": "Тип нотификации",
@@ -100,6 +106,9 @@
       "post": {
         "summary": "Нотификация изменения статуса договора",
         "description": "Данная нотификация срабатывает при изменении статуса авторизации договора",
+        "tags": [
+          "События договора займа"
+        ],
         "requestBody": {
           "required": true,
           "description": "Body request",
@@ -149,6 +158,9 @@
       "post": {
         "summary": "Нотификация изменения статуса финансирования",
         "description": "Данная нотификация срабатывает при изменении статуса финансирования",
+        "tags": [
+          "События финансирования"
+        ],
         "requestBody": {
           "required": true,
           "description": "Body request",

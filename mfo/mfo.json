@@ -8,6 +8,48 @@
     "version": "0.1"
   },
   "webhooks": {
+    "onUpdatedScoring": {
+      "post": {
+        "summary": "Нотификация изменения состояния скоринга",
+        "description": "Данная нотификация срабатывает при изменения состояния скоринга",
+        "tags": [
+          "События скоринга заявки"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Body request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "applicationId",
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "description": "Тип нотификации",
+                    "type": "string",
+                    "examples": [
+                      "UpdatedScoringNotification"
+                    ]
+                  },
+                  "applicationId": {
+                    "description": "Идентификатор заявки",
+                    "$ref": "#/components/schemas/Uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Запрос принят"
+          }
+        }
+      }
+    },
     "onAuthorizationLoanAgreement": {
       "post": {
         "tags": [
@@ -518,6 +560,667 @@
   },
   "components": {
     "schemas": {
+      "Address": {
+        "required": [
+          "type",
+          "value"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/AddressType"
+          },
+          "value": {
+            "type": "string",
+            "description": "Адрес одной строкой",
+            "examples": [
+              "г Москва, Красногвардейский б-р, д 1, кв 1"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "AddressType": {
+        "type": "string",
+        "description": "Типы адресов:\n\n- `WORK` - адрес работы\n- `FACTUAL` - фактический адрес проживания\n- `REGISTER` - адрес регистрации",
+        "enum": [
+          "REGISTER",
+          "FACTUAL",
+          "WORK"
+        ]
+      },
+      "Gender": {
+        "description": "Гендеры:\n\n- `MEN` - мужчина\n- `WOMEN` - женщина",
+        "type": "string",
+        "enum": [
+          "MEN",
+          "WOMEN"
+        ]
+      },
+      "Date": {
+        "title": "Дата",
+        "type": "string",
+        "format": "d.m.Y",
+        "pattern": "[0-9]{2}.[0-9]{2}.[0-9]{4}",
+        "examples": [
+          "13.05.2005"
+        ]
+      },
+      "Surveys": {
+        "type": "object",
+        "description": "Опросы клиента",
+        "required": [
+          "digitalSignature",
+          "personalDataProcessing",
+          "dataSharing",
+          "creditHistory",
+          "pensionFundRequest",
+          "partnerDataRetrieval",
+          "marketingInfo",
+          "beneficialOwner",
+          "publicOfficial",
+          "hasPensionStatus",
+          "taxResidencies"
+        ],
+        "properties": {
+          "taxResidencies": {
+            "description": "Страны налогового резидентства клиента в формате ISO 3166-1 alpha-2.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "examples": [["RU", "US"]]
+          },
+          "hasPensionStatus": {
+            "type": "boolean",
+            "description": "Имею статус пенсионера."
+          },
+          "digitalSignature": {
+            "type": "boolean",
+            "description": "Даю согласие на использование простой электронной подписи."
+          },
+          "personalDataProcessing": {
+            "type": "boolean",
+            "description": "Даю согласие на обработку своих персональных данных в том числе биометрических."
+          },
+          "dataSharing": {
+            "type": "boolean",
+            "description": "Даю согласие Финансовым организациям и Партнерам на получение и обработку моих персональных данных."
+          },
+          "creditHistory": {
+            "type": "boolean",
+            "description": "Даю согласие Финансовым организациям на запрос моей кредитной истории."
+          },
+          "pensionFundRequest": {
+            "type": "boolean",
+            "description": "Даю согласие Финансовым организациям на запрос сведений в ПФР."
+          },
+          "partnerDataRetrieval": {
+            "type": "boolean",
+            "description": "Даю согласие на получение моих персональных данных от Партнеров и Финансовых организаций."
+          },
+          "marketingInfo": {
+            "type": "boolean",
+            "description": "Даю согласие на получение информационных сообщений и информации о маркетинговых мероприятиях."
+          },
+          "beneficialOwner": {
+            "type": "boolean",
+            "description": "Подтверждаю что действую в собственных интересах (являюсь бенефициарным владельцем)."
+          },
+          "publicOfficial": {
+            "type": "string",
+            "title": "Публичное лицо",
+            "description": "Являюсь ли я какого либо рода публичным должностным лицом, его родственником или нахожусь в деловых отношениях с ним. \n\n - NOT_PUBLIC - Не являюсь публичным должностным лицом, а также его супругом или родственником и не имею близких деловых отношений с ним. \n - RUSSIAN - Являюсь российским публичным должностным лицом, или его супругом или родственником или имею близкие деловые отношения с ним. \n - FOREIGN - Являюсь иностранным или международным публичным должностным лицом, или его супругом или родственником или имею близкие деловые отношения с ним.",
+            "enum": [
+              "NOT_PUBLIC",
+              "RUSSIAN",
+              "FOREIGN"
+            ]
+          }
+        }
+      },
+      "Income": {
+        "required": [
+          "type",
+          "amount"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/IncomeType"
+          },
+          "amount": {
+            "description": "Сумма",
+            "$ref": "#/components/schemas/Amount"
+          }
+        },
+        "type": "object"
+      },
+      "IncomeType": {
+        "type": "string",
+        "description": "Типы доходов:\n\n- `MONTH` - месячный\n- `FAMILY` - семейный\n- `ADDITIONAL` - дополнительный доход \n- `ESIA_YEARLY` - годовой доход, полученный из ЕСИА (ГосУслуги)",
+        "enum": [
+          "MONTH",
+          "ADDITIONAL",
+          "FAMILY",
+          "ESIA_YEARLY"
+        ]
+      },
+      "DocumentType": {
+        "title": "Тип документа",
+        "type": "string",
+        "enum": [
+          "DRIVER_LICENSE",
+          "INN",
+          "PASSPORT_RUSSIAN_FEDERATION",
+          "PASSPORT_RUSSIAN_FEDERATION_INTERNATIONAL",
+          "SNILS",
+          "STS",
+          "PTS",
+          "EPTS"
+        ],
+        "description": "Типы документов:\n\n- `INN` - идентификационный номер налогоплательщика\n- `PTS` - паспорт транспортного средства\n- `STS` - свидетельство регистрации транспортного средства\n- `EPTS` - электронный паспорт транспортного средства\n- `SNILS` - страховой номер индивидуального лицевого счёта\n- `DRIVER_LICENSE` - водительские права\n- `PASSPORT_RUSSIAN_FEDERATION` - паспорт Российской федерации\n- `PREVIOUS_PASSPORT_RUSSIAN_FEDERATION` - Предыдущий паспорт Российской федерации \n- `PASSPORT_RUSSIAN_FEDERATION_INTERNATIONAL` - заграничный паспорт Российской Федерации\n\n"
+      },
+      "Document": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object",
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "PASSPORT_RUSSIAN_FEDERATION": "#/components/schemas/RussianPassportDocument",
+            "PREVIOUS_PASSPORT_RUSSIAN_FEDERATION": "#/components/schemas/PreviousRussianPassportDocument",
+            "PASSPORT_RUSSIAN_FEDERATION_INTERNATIONAL": "#/components/schemas/RussianInternationalPassportDocument",
+            "INN": "#/components/schemas/InnDocument",
+            "SNILS": "#/components/schemas/SnilsDocument",
+            "DRIVER_LICENSE": "#/components/schemas/DriverLicenseDocument",
+            "PTS": "#/components/schemas/PtsDocument",
+            "EPTS": "#/components/schemas/EptsDocument",
+            "STS": "#/components/schemas/StsDocument"
+          }
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/RussianPassportDocument"
+          },
+          {
+            "$ref": "#/components/schemas/RussianInternationalPassportDocument"
+          },
+          {
+            "$ref": "#/components/schemas/InnDocument"
+          },
+          {
+            "$ref": "#/components/schemas/SnilsDocument"
+          },
+          {
+            "$ref": "#/components/schemas/DriverLicenseDocument"
+          },
+          {
+            "$ref": "#/components/schemas/PtsDocument"
+          },
+          {
+            "$ref": "#/components/schemas/EptsDocument"
+          },
+          {
+            "$ref": "#/components/schemas/StsDocument"
+          }
+        ]
+      },
+      "RussianDivisionCode": {
+        "type": "string",
+        "description": "Код подразделения Российского паспорта",
+        "examples": [
+          "000-000"
+        ],
+        "pattern": "\\d{3}-\\d{3}"
+      },
+      "RussianPassportSeries": {
+        "type": "string",
+        "description": "Серия Российского паспорта",
+        "examples": [
+          "0000"
+        ],
+        "pattern": "\\d{4}"
+      },
+      "RussianPassportNumber": {
+        "type": "string",
+        "description": "Номер Российского паспорта",
+        "examples": [
+          "000000"
+        ],
+        "pattern": "\\d{6}"
+      },
+      "PreviousRussianPassportDocument": {
+        "description": "Предыдущий паспорт Российской федерации",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "divisionCode",
+          "birthAt",
+          "birthPlace"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          },
+          "series": {
+            "$ref": "#/components/schemas/RussianPassportSeries"
+          },
+          "number": {
+            "$ref": "#/components/schemas/RussianPassportNumber"
+          },
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи паспорта"
+          },
+          "divisionCode": {
+            "$ref": "#/components/schemas/RussianDivisionCode"
+          },
+          "birthAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата рождения",
+            "examples": [
+              "18.01.1996"
+            ]
+          },
+          "birthPlace": {
+            "type": "string",
+            "maxLength": 355,
+            "examples": [
+              "C.КОЧКИ КОЧКОВСКОГО Р-НА НОВОСБИРСКОЙ ОБЛ"
+            ],
+            "description": "Место рождения"
+          }
+        },
+        "type": "object"
+      },
+      "RussianPassportDocument": {
+        "description": "Паспорт Российской федерации",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "issuedBy",
+          "divisionCode",
+          "birthAt",
+          "birthPlace"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          },
+          "series": {
+            "$ref": "#/components/schemas/RussianPassportSeries"
+          },
+          "number": {
+            "$ref": "#/components/schemas/RussianPassportNumber"
+          },
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи паспорта"
+          },
+          "issuedBy": {
+            "type": "string",
+            "maxLength": 355,
+            "description": "Кем выдан паспорт"
+          },
+          "divisionCode": {
+            "$ref": "#/components/schemas/RussianDivisionCode"
+          },
+          "birthAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата рождения",
+            "examples": [
+              "18.01.1996"
+            ]
+          },
+          "birthPlace": {
+            "type": "string",
+            "maxLength": 355,
+            "examples": [
+              "C.КОЧКИ КОЧКОВСКОГО Р-НА НОВОСБИРСКОЙ ОБЛ"
+            ],
+            "description": "Место рождения"
+          }
+        },
+        "type": "object"
+      },
+      "RussianInternationalPassportDocument": {
+        "description": "Заграничный паспорт Российской федерации",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "issuedBy"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          },
+          "series": {
+            "$ref": "#/components/schemas/RussianPassportSeries"
+          },
+          "number": {
+            "$ref": "#/components/schemas/RussianPassportNumber"
+          },
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи паспорта"
+          },
+          "issuedBy": {
+            "type": "string",
+            "maxLength": 355,
+            "description": "Кем выдан паспорт"
+          }
+        },
+        "type": "object"
+      },
+      "InnDocument": {
+        "description": "Идентификационный номер налогоплательщика",
+        "required": [
+          "type",
+          "number"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "7743013902"
+            ],
+            "description": "Идентификационный номер налогоплательщика",
+            "pattern": "\\d{12}"
+          }
+        },
+        "type": "object"
+      },
+      "SnilsDocument": {
+        "required": [
+          "type",
+          "number"
+        ],
+        "description": "Cтраховой номер индивидуального лицевого счёта",
+        "properties": {
+          "number": {
+            "type": "string",
+            "examples": [
+              "123-456-789 00"
+            ],
+            "pattern": "\\d{3}-\\d{3}-\\d{3} \\d{2}",
+            "description": "Cтраховой номер индивидуального лицевого счёта"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object"
+      },
+      "DriverLicenseDocument": {
+        "description": "Водительские права",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "issuedBy"
+        ],
+        "properties": {
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи прав"
+          },
+          "issuedBy": {
+            "type": "string",
+            "description": "Кем выдан паспорт"
+          },
+          "series": {
+            "type": "string",
+            "examples": [
+              "1234"
+            ],
+            "description": "Серия прав"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "123456"
+            ],
+            "description": "Номер прав"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object"
+      },
+      "PtsDocument": {
+        "description": "Паспорт транспортного средства",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "issuedBy"
+        ],
+        "properties": {
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи прав"
+          },
+          "issuedBy": {
+            "type": "string",
+            "description": "Кем выдан паспорт"
+          },
+          "series": {
+            "type": "string",
+            "examples": [
+              "1234"
+            ],
+            "description": "Серия прав"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "123456"
+            ],
+            "description": "Номер прав"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object"
+      },
+      "EptsDocument": {
+        "description": "Электронный паспорт транспортного средства",
+        "required": [
+          "type",
+          "number",
+          "issuedAt"
+        ],
+        "properties": {
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи ЭПТС"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "123456789012345"
+            ],
+            "description": "Номер ЭПТС"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object"
+      },
+      "StsDocument": {
+        "description": "Свидетельство о регистрации транспортного средства",
+        "required": [
+          "type",
+          "series",
+          "number",
+          "issuedAt",
+          "issuedBy"
+        ],
+        "properties": {
+          "issuedAt": {
+            "$ref": "#/components/schemas/Date",
+            "description": "Дата выдачи СТС"
+          },
+          "issuedBy": {
+            "type": "string",
+            "description": "Кем выдан СТС"
+          },
+          "series": {
+            "type": "string",
+            "examples": [
+              "0000"
+            ],
+            "description": "Серия СТС"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "123456"
+            ],
+            "description": "Номер СТС"
+          },
+          "type": {
+            "$ref": "#/components/schemas/DocumentType"
+          }
+        },
+        "type": "object"
+      },
+      "Work": {
+        "description": "Место работы",
+        "required": [
+          "name",
+          "taxNumber",
+          "phones",
+          "addresses"
+        ],
+        "properties": {
+          "positionName": {
+            "type": ["string", "null"],
+            "maxLength": 255,
+            "minLength": 2,
+            "description": "Название должности"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "description": "Название компании"
+          },
+          "taxNumber": {
+            "$ref": "#/components/schemas/TaxNumberUnion"
+          },
+          "addresses": {
+            "type": "array",
+            "description": "Адреса работодателя",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              ["г Москва, ул Авиамоторная, д 10 к 2"]
+            ]
+          },
+          "phones": {
+            "type": "array",
+            "description": "Номера телефона работодателя",
+            "items": {
+              "type": "string"
+            },
+            "examples": [
+              ["+79175848148"]
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "TaxNumberUnion": {
+        "type": "string",
+        "pattern": "\\d{10}(\\d{2})?",
+        "description": "Налоговый номер индивидуального предпринимателя или физического лица",
+        "examples": [
+          "752276213667"
+        ]
+      },
+      "Phone": {
+        "required": [
+          "type",
+          "number"
+        ],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/PhoneType"
+          },
+          "number": {
+            "type": "string",
+            "examples": [
+              "+79994652397"
+            ],
+            "description": "Номер телефона"
+          }
+        },
+        "type": "object"
+      },
+      "PhoneType": {
+        "type": "string",
+        "description": "Типы номеров:\n\n- `WORK` - рабочий\n- `HOME` - домашний\n- `CONTACT_PERSON` - контактного лица\n- `SECOND_CONTACT_PERSON` - второго контактного лица\n - `ESIA` - номер, указанный в Госуслугах/ЕСИА\n - `PERSONAL` - личный номер клиента",
+        "enum": [
+          "WORK",
+          "HOME",
+          "CONTACT_PERSON",
+          "SECOND_CONTACT_PERSON",
+          "ESIA"
+        ]
+      },
+      "Currency": {
+        "description": "Код валюты, <span style=\"color:red\">**стандарт ISO 4217**</span>",
+        "type": "string",
+        "pattern": "^[A-Z]{3}$",
+        "examples": [
+          "RUB",
+          "USD"
+        ]
+      },
+      "Uuid": {
+        "title": "Универсально уникальный идентификатор",
+        "type": "string",
+        "format": "uuid",
+        "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+        "examples": [
+          "00000000-0000-0000-0000-000000000000"
+        ]
+      },
+      "Amount": {
+        "type": "object",
+        "required": ["value", "currency"],
+        "properties": {
+          "value": {
+            "type": "string",
+            "pattern": "^\\\\d+$",
+            "examples": [
+              "100"
+            ],
+            "description": "Сумма в <span style=\"color:red\">**копейках**</span>"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          }
+        }
+      },
       "Offer": {
         "required": ["id", "term", "amount", "rate", "monthlyPayment", "continueUrl"],
         "properties": {
@@ -569,20 +1272,146 @@
       "CreateApplication": {
         "type": "object",
         "required": [
-          "antifraudProviders",
+          "externalApplicationId",
+          "amount",
+          "term",
+          "client",
           "redirectUrls"
         ],
         "properties": {
-          "antifraudProviders": {
-            "type": "array",
-            "description": "Провайдеры антифрода",
+          "externalApplicationId": {
+            "description": "Идентификатор заявки внешней системы",
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "term": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 400,
+            "description": "Срок займа",
             "examples": [
-              [
-                {"provider":  "JUICY_SCORE", "sessionId":  "123"}
-              ]
+              1
+            ]
+          },
+          "amount": {
+            "type": "object",
+            "description": "Запрашиваемая сумма",
+            "$ref": "#/components/schemas/Amount"
+          },
+          "client": {
+            "type": "object",
+            "description": "Персональные данные клиента",
+            "required": [
+              "firstname",
+              "lastname",
+              "gender",
+              "addresses",
+              "incomes",
+              "documents",
+              "phones",
+              "surveys",
+              "antifraudProviders",
+              "joinType"
             ],
-            "items": {
-              "$ref": "#/components/schemas/AntifraudProvider"
+            "properties": {
+              "joinType": {
+                "enum": [
+                  "CPG",
+                  "ALFA",
+                  "SBER",
+                  "SES"
+                ],
+                "type": "string",
+                "description": "Тип идентификации:\n\n- `CPG` - Идентификация через ЕСИА\n- `ALFA` -  Идентификация через AlfaId\n- `SBER` -  Идентификация через SberId\n- `SES` -  Идентификация через простую электронную подпись"
+              },
+              "antifraudProviders": {
+                "type": "array",
+                "description": "Провайдеры антифрода",
+                "examples": [
+                  [
+                    {"provider":  "JUICY_SCORE", "sessionId":  "123"}
+                  ]
+                ],
+                "items": {
+                  "$ref": "#/components/schemas/AntifraudProvider"
+                }
+              },
+              "firstname": {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 2,
+                "examples": [
+                  "Антон"
+                ],
+                "description": "Имя"
+              },
+              "lastname": {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 2,
+                "examples": [
+                  "Кононов"
+                ],
+                "description": "Фамилия"
+              },
+              "gender": {
+                "$ref": "#/components/schemas/Gender"
+              },
+              "work": {
+                "nullable": true,
+                "$ref": "#/components/schemas/Work",
+                "description": "Место работы"
+              },
+              "secondname": {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 2,
+                "examples": [
+                  "Германович"
+                ],
+                "nullable": true,
+                "description": "Отчество"
+              },
+              "addresses": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Address"
+                },
+                "maxItems": 3,
+                "minItems": 1,
+                "uniqueItems": true,
+                "description": "Адреса клиента"
+              },
+              "incomes": {
+                "description": "Доходы клиентов",
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Income"
+                },
+                "maxItems": 4,
+                "minItems": 0,
+                "uniqueItems": true
+              },
+              "documents": {
+                "description": "Документы клиента",
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Document"
+                },
+                "maxItems": 13
+              },
+              "surveys": {
+                "$ref": "#/components/schemas/Surveys"
+              },
+              "phones": {
+                "description": "Номера телефона клиента",
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Phone"
+                },
+                "maxItems": 5,
+                "minItems": 0,
+                "uniqueItems": true
+              }
             }
           },
           "redirectUrls": {

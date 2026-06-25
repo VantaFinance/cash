@@ -95,7 +95,7 @@ flowchart LR
 
 
 
-## Workflow скоринга
+## Скоринг заявки
 
 ```mermaid
 sequenceDiagram
@@ -151,7 +151,7 @@ end
 
 
 
-## Workflow авторизации договора займа
+## Авторизации договора займа
 
 
 ```mermaid
