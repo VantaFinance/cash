@@ -77,11 +77,13 @@
                   },
                   "status": {
                     "type": "string",
-                    "description": "Статус авторизации договора займа. \n- `AUTHORIZED` - Договор успешно авторизирован \n- `ERROR` - Договор не авторизирован \n- `REJECTED` - Банк отказался авторизовать договор  \n- `CANCELLED` - Клиент отказался от займа`",
+                    "description": "Статус авторизации договора займа.\n\n Возможные значения: \n\n- `AUTHORIZED` - Договор авторизован\n\n- `AUTHORIZED_FAILED` - Ошибка авторизации\n\n- `AUTHORIZE_PENDING` - Ожидание авторизации\n\n- `AUTHORIZED_CANCELLED` - Авторизация отменена\n\n- `AUTHORIZED_REJECTED` - Авторизация отклонена",
                     "enum": [
                       "AUTHORIZED",
-                      "ERROR",
-                      "REJECTED"
+                      "AUTHORIZED_FAILED",
+                      "AUTHORIZE_PENDING",
+                      "AUTHORIZED_CANCELLED",
+                      "AUTHORIZED_REJECTED"
                     ]
                   },
                   "message": {

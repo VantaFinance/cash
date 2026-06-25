@@ -156,60 +156,71 @@ end
 ```mermaid
 sequenceDiagram
 
-actor Client as Клиент
+    actor Client as Клиент
 
-box rgb(166,83,266) Marketplace
-    participant Cash Bus
-    participant Cash Conveyor
-end
-
-box MFO
-    participant MFO
-end
-
-MFO ->> MFO : Клиент подписывает договор займа
-MFO ->>+ Cash Bus : МФО сообщает о начале авторизации займа
-MFO ->>+ Cash Conveyor : МФО возвращает клиента в конвейер кредитов
-
-rect rgb(210,46,46)
-    loop До получения конечного статуса авторизации
-        Note right of Cash Bus: Начинаем отслеживание авторизации договора займа
-
-        Cash Bus ->> MFO: Получение статуса авторизации договора<br/>GET /api/v1/application/{id}
-
-        alt Статус = AUTHORIZE_PENDING
-            Note right of Cash Bus: Продолжаем отслеживание авторизации договора займа
-        end
-
-        rect rgb(0,156,65)
-            break Статус = AUTHORIZED
-                Cash Bus->>MFO: Получение подписанного договора займа<br/>GET /api/v1/loan-agreement/{id}/signed
-                Cash Bus->>MFO: Получение черновика договора займа<br/>GET /api/v1/loan-agreement/{id}/draft
-                Cash Bus->>MFO: Получение деталей авторизованного договора займа<br/>GET /api/v1/loan-agreement/{id}/details
-
-                Cash Bus->>Cash Conveyor: Сообщение об успешной авторизации займа
-                Cash Conveyor->>+Cash Conveyor: Внутренняя логика обработки
-                Cash Conveyor-->>Client: Редирект на success-экран<br/>(договор авторизован)
-            end
-        end
-
-        rect rgb(60,115,168)
-            break Статус = AUTHORIZED_REJECTED
-                Cash Bus->>Cash Conveyor: Сообщение об отказе в авторизации займа<br/>(МФО отклонила заявку на финальном этапе)
-                Cash Conveyor->>+Cash Conveyor: Внутренняя логика обработки
-                Cash Conveyor-->>Client: Редирект на экран отказа<br/>(redirectUrl: AUTHORIZED_REJECTED)
-            end
-        end
-
-        rect rgb(60,115,168)
-            break Статус = AUTHORIZED_CANCELLED
-                Client--)MFO: Клиент отказался от получения займа<br/>на экране MFO
-                Cash Bus->>Cash Conveyor: Сообщение об отмене авторизации займа<br/>(клиент отказался от получения займа)
-                Cash Conveyor->>+Cash Conveyor: Внутренняя логика обработки
-                Cash Conveyor-->>Client: Редирект на экран отмены<br/>(redirectUrl: AUTHORIZED_CANCELLED)
-            end
-        end
-
+    box rgb(166,83,266) Marketplace
+        participant Cash Bus
+        participant Cash Conveyor
     end
-end
+
+    box MFO
+        participant MFO
+    end
+
+    MFO ->> MFO : Клиент подписывает договор займа
+    MFO ->>+ Cash Bus : Событие старта авторизации<br/>onAuthorizeLoanAgreementStarted<br/>(AuthorizeLoanAgreementStarted, applicationId)
+    Cash Bus ->> MFO : Получение деталей договора займа<br/>GET /api/v1/loan-agreement/{id}/details
+    MFO ->>+ Cash Conveyor : МФО возвращает клиента в конвейер кредитов
+
+    rect rgb(210,46,46)
+        loop До получения конечного статуса авторизации
+            Note right of Cash Bus: Начинаем отслеживание авторизации договора займа
+
+            alt Событийный канал (приоритетный)
+                MFO ->> Cash Bus : Событие авторизации договора<br/>onAuthorizationLoanAgreement<br/>(status, message)
+            else Polling (резервный канал)
+                Cash Bus ->> MFO: Получение статуса авторизации договора<br/>GET /api/v1/application/{id}
+            end
+
+            alt Статус = AUTHORIZE_PENDING
+                Note right of Cash Bus: Продолжаем отслеживание авторизации договора займа
+            end
+
+            rect rgb(0,156,65)
+                break Статус = AUTHORIZED
+                    Cash Bus->>MFO: Получение подписанного договора займа<br/>GET /api/v1/loan-agreement/{id}/signed
+                    Cash Bus->>MFO: Получение черновика договора займа<br/>GET /api/v1/loan-agreement/{id}/draft
+
+                    Cash Bus->>Cash Conveyor: Сообщение об успешной авторизации займа
+                    Cash Conveyor->>+Cash Conveyor: Внутренняя логика обработки
+                    Cash Conveyor-->>Client: Редирект на success-экран<br/>(договор авторизован)
+                end
+            end
+
+            rect rgb(60,115,168)
+                break Статус = AUTHORIZED_FAILED
+                    Cash Bus->>Cash Conveyor: Сообщение об ошибке авторизации займа<br/>(договор не авторизирован)
+                    Cash Conveyor->>+Cash Conveyor: Внутренняя логика обработки
+                end
+            end
+
+            rect rgb(60,115,168)
+                break Статус = AUTHORIZED_REJECTED
+                    Cash Bus->>Cash Conveyor: Сообщение об отказе в авторизации займа<br/>(МФО отклонила заявку на финальном этапе)
+                    Cash Conveyor->>+Cash Conveyor: Внутренняя логика обработки
+                    Cash Conveyor-->>Client: Редирект на экран отказа<br/>(redirectUrl: AUTHORIZED_REJECTED)
+                end
+            end
+
+            rect rgb(60,115,168)
+                break Статус = AUTHORIZED_CANCELLED
+                    Client--)MFO: Клиент отказался от получения займа<br/>на экране MFO
+                    Cash Bus->>Cash Conveyor: Сообщение об отмене авторизации займа<br/>(клиент отказался от получения займа)
+                    Cash Conveyor->>+Cash Conveyor: Внутренняя логика обработки
+                    Cash Conveyor-->>Client: Редирект на экран отмены<br/>(redirectUrl: AUTHORIZED_CANCELLED)
+                end
+            end
+
+        end
+    end
 ```
