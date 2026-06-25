@@ -1507,11 +1507,12 @@
     "schemas": {
       "DraftPrintStatus": {
         "type": "string",
-        "description": "Статус печати. \n\n Возможные значения: \n\n- `WAITING` - В процессе печати договора \n\n- `SUCCESS` - Договор успешно 'распечатан' \n\n- `ERROR` - Договор не удалось 'распечатать'",
+        "description": "Статус печати. \n\n Возможные значения: \n\n- `WAITING` - В процессе печати договора \n\n- `SUCCESS` - Договор успешно 'распечатан' \n\n- `ERROR` - Договор не удалось 'распечатать' \n\n- `REJECTED` - Отказано в печати черновика договора",
         "enum": [
           "WAITING",
           "SUCCESS",
-          "ERROR"
+          "ERROR",
+          "REJECTED"
         ]
       },
       "LoanAgreementStatus": {
