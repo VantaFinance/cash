@@ -1235,6 +1235,7 @@
           },
           "term": {
             "type": "object",
+            "description": "Срок займа",
             "required": ["unit", "value"],
             "properties": {
               "unit": {
@@ -1244,13 +1245,13 @@
                   "DAY",
                   "WEEK",
                   "MONTH"
-                ],
-                "value": {
-                  "type": "integer",
-                  "format": "int32",
-                  "minimum": 1,
-                  "description": "Срок кредитования"
-                }
+                ]
+              },
+              "value": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 1,
+                "description": "Срок кредитования"
               }
             }
           },
