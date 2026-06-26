@@ -1234,10 +1234,25 @@
             ]
           },
           "term": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "description": "Срок кредитования **в месяцах**"
+            "type": "object",
+            "required": ["unit", "value"],
+            "properties": {
+              "unit": {
+                "type": "string",
+                "description": "Единица измерения срока займа",
+                "enum": [
+                  "DAY",
+                  "WEEK",
+                  "MONTH"
+                ],
+                "value": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 1,
+                  "description": "Срок кредитования"
+                }
+              }
+            }
           },
           "continueUrl": {
             "type": "string",
@@ -1270,6 +1285,29 @@
           }
         },
         "type": "object"
+      },
+      "Scan": {
+        "type": "object",
+        "required": [
+          "type",
+          "url"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Типы сканов. \n\n Возможные значения: \n\n- `CPPD` - Согласие обработку персональных данных",
+            "enum": [
+              "CPPD"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "description": "Ссылка на документ",
+            "examples": [
+              "https://cash-bus.b2serv.local/documents/a9b1a9b8-f801-4146-9ddd-773bee493e63.pdf"
+            ]
+          }
+        }
       },
       "CreateApplication": {
         "type": "object",
@@ -1312,9 +1350,18 @@
               "phones",
               "surveys",
               "antifraudProviders",
-              "joinType"
+              "joinType",
+              "scans"
             ],
             "properties": {
+              "scans": {
+                "type": "array",
+                "description": "Сканы документов",
+                "minItems": 1,
+                "items": {
+                  "$ref": "#/components/schemas/Scan"
+                }
+              },
               "joinType": {
                 "enum": [
                   "CPG",

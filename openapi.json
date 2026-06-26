@@ -261,7 +261,8 @@
                       "phones",
                       "surveys",
                       "antifraudProviders",
-                      "joinType"
+                      "joinType",
+                      "scans"
                     ],
                     "properties": {
                       "joinType": {
@@ -273,6 +274,14 @@
                         ],
                         "type": "string",
                         "description": "Тип идентификации:\n\n- `CPG` - Идентификация через ЕСИА\n- `ALFA` -  Идентификация через AlfaId\n- `SBER` -  Идентификация через SberId\n- `SES` -  Идентификация через простую электронную подпись"
+                      },
+                      "scans": {
+                        "type": "array",
+                        "description": "Сканы документов",
+                        "minItems": 1,
+                        "items": {
+                          "$ref": "#/components/schemas/Scan"
+                        }
                       },
                       "antifraudProviders": {
                         "type": "array",
@@ -1517,6 +1526,29 @@
   },
   "components": {
     "schemas": {
+      "Scan": {
+        "type": "object",
+        "required": [
+          "type",
+          "url"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Типы сканов. \n\n Возможные значения: \n\n- `CPPD` - Согласие обработку персональных данных",
+            "enum": [
+              "CPPD"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "description": "Ссылка на документ",
+            "examples": [
+              "https://cash-bus.b2serv.local/documents/a9b1a9b8-f801-4146-9ddd-773bee493e63.pdf"
+            ]
+          }
+        }
+      },
       "DraftPrintStatus": {
         "type": "string",
         "description": "Статус печати. \n\n Возможные значения: \n\n- `WAITING` - В процессе печати договора \n\n- `SUCCESS` - Договор успешно 'распечатан' \n\n- `ERROR` - Договор не удалось 'распечатать' \n\n- `REJECTED` - Отказано в печати черновика договора",
