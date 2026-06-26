@@ -1586,9 +1586,26 @@
             ]
           },
           "term": {
-            "type": "integer",
-            "description": "Срок займа в месяцах",
-            "minimum": 1
+            "type": "object",
+            "description": "Срок займа",
+            "required": ["unit", "value"],
+            "properties": {
+              "unit": {
+                "type": "string",
+                "description": "Единица измерения срока займа",
+                "enum": [
+                  "DAY",
+                  "WEEK",
+                  "MONTH"
+                ]
+              },
+              "value": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 1,
+                "description": "Срок кредитования"
+              }
+            }
           },
           "totalCost": {
             "description": "Полная стоимость займа",
