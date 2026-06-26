@@ -1224,7 +1224,7 @@
         }
       },
       "Offer": {
-        "required": ["id", "term", "amount", "rate", "monthlyPayment", "continueUrl"],
+        "required": ["id", "term", "amount", "rate", "payment", "continueUrl"],
         "properties": {
           "id": {
             "description": "Идентификатор банковского предложения",
@@ -1262,7 +1262,7 @@
               "https://mfo.vanta.ru?offerId=00000000-0000-0000-0000-000000000000"
             ]
           },
-          "monthlyPayment": {
+          "payment": {
             "type": "string",
             "description": "Ежемесячный платеж в <span style=\"color:red\">**копейках**</span>",
             "format": "int64",
@@ -1557,7 +1557,7 @@
         "description": "Параметры договора займа",
         "required": [
           "agreementNumber",
-          "monthlyPayment",
+          "payment",
           "term",
           "totalCost",
           "rate",
@@ -1578,9 +1578,9 @@
               "DNS7023227"
             ]
           },
-          "monthlyPayment": {
+          "payment": {
             "type": "string",
-            "description": "Ежемесячный платеж <span style=\"color:red\">**копейках**</span>",
+            "description": "Платеж <span style=\"color:red\">**копейках**</span>",
             "examples": [
               "500000"
             ]
