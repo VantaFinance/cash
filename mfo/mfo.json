@@ -1352,7 +1352,8 @@
               "surveys",
               "antifraudProviders",
               "joinType",
-              "scans"
+              "scans",
+              "email"
             ],
             "properties": {
               "scans": {
@@ -1372,6 +1373,14 @@
                 ],
                 "type": "string",
                 "description": "Тип идентификации:\n\n- `CPG` - Идентификация через ЕСИА\n- `ALFA` -  Идентификация через AlfaId\n- `SBER` -  Идентификация через SberId\n- `SES` -  Идентификация через простую электронную подпись"
+              },
+              "email": {
+                "type": "string",
+                "description": "Электронная почта",
+                "format": "email",
+                "examples": [
+                  "client@vanta.ru"
+                ]
               },
               "antifraudProviders": {
                 "type": "array",
